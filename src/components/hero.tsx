@@ -1,4 +1,4 @@
-import { useRef } from "react";
+import { useRef, useEffect } from "react";
 import { motion, useScroll, useTransform } from "motion/react";
 import { ArrowRight } from "lucide-react";
 import heroPoster from "../assets/img1.png";
@@ -13,6 +13,17 @@ const HEADLINE_DURATION = OPENING_BEAT + HEADLINE_WORDS.length * 0.09 + 0.7;
 
 export default function Hero() {
   const sectionRef = useRef<HTMLElement>(null);
+  const videoRef = useRef<HTMLVideoElement>(null);
+
+
+  useEffect(() => {
+    const video = videoRef.current;
+    if (!video) return;
+    video.muted = true;
+    video.play().catch(() => {
+    });
+  }, []);
+
   const { scrollYProgress } = useScroll({
     target: sectionRef,
     offset: ["start start", "end start"],
@@ -29,7 +40,8 @@ export default function Hero() {
     >
       {/* Background video —  */}
       <motion.div style={{ scale: scrollScale }} className="absolute inset-0">
-        <motion.video
+         <motion.video
+          ref={videoRef}
           initial={{ scale: 1.08 }}
           animate={{ scale: 1 }}
           transition={{ duration: 2.4, ease: CINEMATIC_EASE }}
@@ -38,6 +50,7 @@ export default function Hero() {
           muted
           loop
           playsInline
+          preload="auto"
           poster={heroPoster}
         >
           <source src={heroVideo} type="video/mp4" />
