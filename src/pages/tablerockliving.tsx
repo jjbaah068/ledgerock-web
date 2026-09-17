@@ -1,10 +1,8 @@
 import { useRef } from "react";
-import { motion, useScroll, useTransform, useReducedMotion } from "motion/react";
+import { motion, useScroll, useTransform } from "motion/react";
 import {
-  Fish,
   ShoppingCart,
   Anchor,
-  MapPin,
   ArrowDown,
   ArrowRight
 } from "lucide-react";
@@ -12,8 +10,6 @@ import { Link } from "react-router-dom";
 import Navbar from "../components/navbar";
 import Footer from "../components/footer";
 
-import aboutCover from "../assets/img1.png";
-import entrance from "../assets/img7.png";
 
 // PLACEHOLDER IMAGES
 const shorelineImage =
@@ -22,10 +18,10 @@ const dockImage =
   "https://images.unsplash.com/photo-1731667251901-60977d1be3fe?w=1600&q=80&auto=format&fit=crop";
 const golfImage =
   "https://images.unsplash.com/photo-1785843530152-b4b69040aa10?w=1600&q=80&auto=format&fit=crop";
-const concertImage =
-  "https://images.unsplash.com/photo-1768053921689-1bc09db904c9?w=1600&q=80&auto=format&fit=crop";
-const canyonImage =
-  "https://images.unsplash.com/photo-1658779987032-1f04a2960b2e?w=1600&q=80&auto=format&fit=crop";
+// const concertImage =
+//   "https://images.unsplash.com/photo-1768053921689-1bc09db904c9?w=1600&q=80&auto=format&fit=crop";
+// const canyonImage =
+//   "https://images.unsplash.com/photo-1658779987032-1f04a2960b2e?w=1600&q=80&auto=format&fit=crop";
 const communityImage = 
   "https://images.unsplash.com/photo-1656076495328-a11c1bd59afa?w=1600&q=80&auto=format&fit=crop";
 
@@ -111,7 +107,7 @@ function ImmersiveSection({
 
 
 export default function TableRockLiving() {
-  const prefersReducedMotion = useReducedMotion();
+  // const prefersReducedMotion = useReducedMotion();
   const heroRef = useRef<HTMLDivElement>(null);
   const { scrollYProgress: heroScroll } = useScroll({
     target: heroRef,
