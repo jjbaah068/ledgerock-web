@@ -1,16 +1,25 @@
-import { createBrowserRouter, RouterProvider } from "react-router";
+import { createBrowserRouter, Outlet, RouterProvider } from "react-router";
 import Home from "./pages/home.tsx";
 import About from "./pages/about.tsx";
 import Contact from "./pages/contact.tsx";
 import Property from "./pages/properties.tsx";
 import PropertyDetail from "./pages/propertydetail.tsx";
 import TableRockLiving from "./pages/tablerockliving.tsx";
+import ScrollToTop from "./components/scrolltotop.tsx";
 
 
+function RootLayout() {
+  return (
+    <>
+      <ScrollToTop />
+      <Outlet />
+    </>
+  );
+}
 
-
-const nexuxRouter = createBrowserRouter([
+const ledgerockRouter = createBrowserRouter([
     {
+        element: <RootLayout />,
         children: [
             { path: "/", element: <Home /> },
             { path: "/about", element: <About /> },
@@ -27,7 +36,7 @@ function App() {
 
   return (
     <>
-    <RouterProvider router={nexuxRouter} />
+    <RouterProvider router={ledgerockRouter} />
     </>
   )
 }

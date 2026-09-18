@@ -22,22 +22,21 @@ const CINEMATIC_EASE = [0.16, 1, 0.3, 1] as const;
 
 const container: Variants = {
   hidden: {},
-  show: { transition: { staggerChildren: 0.08 } },
+  show: { transition: { staggerChildren: 0.12 } },
 };
 
 const cardItem: Variants = {
-  hidden: { opacity: 0, y: 24, scale: 0.96, filter: "blur(4px)" },
+  hidden: { opacity: 0, y: 32, filter: "blur(8px)" },
   show: {
     opacity: 1,
     y: 0,
-    scale: 1,
     filter: "blur(0px)",
-    transition: { duration: 0.55, ease: CINEMATIC_EASE },
+    transition: { duration: 0.8, ease: CINEMATIC_EASE },
   },
   exit: {
     opacity: 0,
-    scale: 0.92,
-    transition: { duration: 0.25, ease: CINEMATIC_EASE },
+    y: 16,
+    transition: { duration: 0.3, ease: CINEMATIC_EASE },
   },
 };
 
@@ -97,7 +96,7 @@ export default function Properties() {
         initial={{ opacity: 0, y: 16 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.7, ease: CINEMATIC_EASE, delay: 0.15 }}
-        className="bg-[#FAF7F1] px-6 pb-8 lg:px-8"
+        className="bg-[#FAF7F1] px-6 pb-12 lg:px-8"
       >
         <div className="mx-auto flex max-w-6xl flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           {/* Left group */}
@@ -146,7 +145,7 @@ export default function Properties() {
             </AnimatePresence>
           </div>
 
-          {/* Right group —  */}
+          {/* Right group */}
           <div className="flex items-center gap-3">
             <input
               type="text"
@@ -165,19 +164,18 @@ export default function Properties() {
           </div>
         </div>
 
-        {/* Result count — quiet feedback on what the filters are showing */}
         <p className="mx-auto mt-4 max-w-6xl font-body text-sm text-neutral-700/60">
           Showing {filteredLots.length} of {LOTS.length} lots
         </p>
       </motion.section>
 
-      {/* Lot grid */}
-      <section className="bg-white px-6 py-16 lg:px-8">
+      {/* Lot grid - Refactored for Premium Layout */}
+      <section className="bg-white px-6 py-20 lg:px-8">
         <motion.div
           variants={container}
           initial="hidden"
           animate="show"
-          className="mx-auto grid max-w-6xl grid-cols-1 gap-8 sm:grid-cols-2 lg:grid-cols-3"
+          className="mx-auto flex max-w-6xl flex-col gap-24 lg:gap-32"
         >
           <AnimatePresence mode="popLayout">
             {filteredLots.length === 0 ? (
@@ -186,21 +184,22 @@ export default function Properties() {
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
-                className="col-span-full text-center font-body text-[15px] text-neutral-700/70"
+                className="text-center font-body text-[15px] text-neutral-700/70"
               >
                 No lots match your filters right now.
               </motion.p>
             ) : (
-              filteredLots.map((lot) => (
+              filteredLots.map((lot, index) => (
                 <motion.div
                   key={lot.id}
                   layout
                   variants={cardItem}
                   exit="exit"
-                  className="group overflow-hidden rounded-2xl bg-white shadow-sm ring-1 ring-neutral-100 transition-all duration-300 hover:-translate-y-1 hover:shadow-lg hover:shadow-neutral-200/60"
+                  className={`group flex flex-col items-center gap-10 lg:gap-16 ${index % 2 === 1 ? "md:flex-row-reverse" : "md:flex-row"
+                    }`}
                 >
-                  {/* Image + status badge */}
-                  <div className="relative h-56 w-full overflow-hidden">
+                  {/* Expansive Image Side */}
+                  <div className="relative h-[350px] w-full overflow-hidden rounded-2xl md:h-[500px] md:w-3/5">
                     <img
                       src={lot.image}
                       alt={
@@ -208,52 +207,64 @@ export default function Properties() {
                           ? "Example home built at Ledge Rock"
                           : `${lot.name} at Ledge Rock at Cricket Creek`
                       }
-                      className="h-full w-full object-cover transition-transform duration-700 ease-out group-hover:scale-105"
+                      className="h-full w-full object-cover transition-transform duration-1000 ease-out group-hover:scale-105"
                     />
                     <span
-                      className={`absolute left-3 top-3 rounded-full px-3 py-1 font-body text-xs font-medium uppercase tracking-wide ${STATUS_STYLES[lot.status]}`}
+                      className={`absolute left-4 top-4 rounded-full px-4 py-1.5 font-body text-xs font-semibold uppercase tracking-widest backdrop-blur-md ${STATUS_STYLES[lot.status]}`}
                     >
                       {lot.status}
                     </span>
                     {lot.isPlaceholderImage && (
-                      <span className="absolute bottom-3 left-3 rounded-full bg-black/60 px-3 py-1 font-body text-xs text-white">
+                      <span className="absolute bottom-4 left-4 rounded-full bg-black/60 px-4 py-1.5 font-body text-xs text-white backdrop-blur-md">
                         Example home &mdash; lot photography coming soon
                       </span>
                     )}
                   </div>
 
-                  {/* Card body */}
-                  <div className="p-5">
-                    <h2 className="font-headline text-lg font-semibold text-neutral-700">
-                      {lot.name} &mdash; {lot.viewType}
-                    </h2>
-                    <p className="mt-1 font-body text-lg font-semibold text-primary">
-                      {lot.price}
-                    </p>
-
-                    <p className="mt-2 flex items-center gap-1.5 font-body text-sm text-neutral-700/70">
-                      <MapPin className="h-4 w-4 shrink-0" />
-                      Ledge Rock at Cricket Creek, Omaha, AR
-                    </p>
-
-                    <div className="mt-4 flex items-center gap-5 border-t border-neutral-100 pt-4 font-body text-sm text-neutral-700/80">
-                      <span className="flex items-center gap-1.5">
-                        <Ruler className="h-4 w-4 shrink-0" />
-                        {lot.acreage}
-                      </span>
-                      <span className="flex items-center gap-1.5">
-                        <Waves className="h-4 w-4 shrink-0" />
-                        {lot.shoreline}
-                      </span>
+                  {/* Refined Content Side */}
+                  <div className="flex w-full flex-col md:w-2/5">
+                    <div className="mb-4 flex items-center gap-2 font-body text-xs font-semibold uppercase tracking-widest text-neutral-400">
+                      <MapPin className="h-4 w-4" />
+                      Ledge Rock at Cricket Creek
                     </div>
 
-                    {/* View Property —  */}
-                    <Link
-                      to={`/properties/${lot.id}`}
-                      className="mt-5 flex items-center justify-center gap-2 rounded-full border border-primary px-5 py-2.5 font-body text-[15px] font-medium text-primary transition-colors hover:bg-primary hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
-                    >
-                      View Property
-                      <ArrowRight className="h-4 w-4" />
+                    <h2 className="font-headline text-3xl font-semibold text-neutral-800 lg:text-4xl">
+                      {lot.name}
+                    </h2>
+
+                    <p className="mt-3 font-body text-xl font-medium text-primary">
+                      {lot.price} <span className="font-normal text-neutral-400">&mdash; {lot.viewType}</span>
+                    </p>
+
+                    <div className="my-8 grid grid-cols-2 gap-8 border-y border-neutral-100 py-6">
+                      <div>
+                        <p className="mb-1 font-body text-[11px] font-semibold uppercase tracking-widest text-neutral-400">
+                          Acreage
+                        </p>
+                        <p className="flex items-center gap-2 font-body text-neutral-700">
+                          <Ruler className="h-4 w-4 text-primary" />
+                          {lot.acreage}
+                        </p>
+                      </div>
+                      <div>
+                        <p className="mb-1 font-body text-[11px] font-semibold uppercase tracking-widest text-neutral-400">
+                          Shoreline
+                        </p>
+                        <p className="flex items-center gap-2 font-body text-neutral-700">
+                          <Waves className="h-4 w-4 text-primary" />
+                          {lot.shoreline}
+                        </p>
+                      </div>
+                    </div>
+
+                    {/* Bespoke Call to Action */}
+                    <Link className="group/btn inline-flex w-fit items-center gap-4 font-body text-base font-medium text-neutral-800 transition-colors hover:text-primary" to={`/properties/${lot.id}`}>
+                      <span className="border-b-2 border-transparent pb-0.5 transition-colors group-hover/btn:border-primary">
+                        Explore Property
+                      </span>
+                      <div className="flex h-12 w-12 items-center justify-center rounded-full bg-neutral-100 transition-all group-hover/btn:bg-primary group-hover/btn:text-white">
+                        <ArrowRight className="h-5 w-5" />
+                      </div>
                     </Link>
                   </div>
                 </motion.div>
