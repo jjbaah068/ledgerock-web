@@ -1,4 +1,5 @@
 import logo from "../assets/logo.png";
+import footerBg from "../assets/img2.png";
 
 function FacebookIcon() {
   return (
@@ -16,7 +17,6 @@ function InstagramIcon() {
   );
 }
 
-// TODO: replace with real profile URLs once Dan/Becky share them.
 const SOCIAL_LINKS = [
   { label: "Facebook", href: "#", icon: FacebookIcon },
   { label: "Instagram", href: "#", icon: InstagramIcon },
@@ -26,84 +26,121 @@ export default function Footer() {
   const year = new Date().getFullYear();
 
   return (
-    <footer className="relative overflow-hidden bg-neutral">
-      {/* Giant background wordmark — decorative brand presence, rendered as
-          text rather than a stretched logo image so it stays crisp at any
-          size instead of pixelating. */}
-      <div
-        aria-hidden="true"
-        className="pointer-events-none absolute inset-0 flex select-none items-center justify-center"
-      >
-        <span className="whitespace-nowrap font-headline text-[5.5rem] font-bold leading-none text-white/[0.06] sm:text-[8rem] lg:text-[11rem]">
-          LedgeRock
-        </span>
-      </div>
+    <footer className="relative overflow-hidden bg-[#F2F4F2] text-[#4A4E4A] font-body">
+      {/* 1. TOP LIGHT SECTION WITH GRID LAYOUT */}
+      <div className="relative z-10 mx-auto max-w-7xl px-6 pt-16 pb-28 lg:px-12">
+        <div className="grid grid-cols-1 gap-12 lg:grid-cols-12 lg:gap-8">
+          
+          {/* Brand & Socials Column */}
+          <div className="lg:col-span-4 flex flex-col items-start">
+            <img
+              src={logo}
+              alt="Ledge Rock at Cricket Creek"
+              className="h-16 sm:h-20 w-auto object-contain"
+            />
+            <p className="mt-4 font-headline text-sm font-semibold tracking-wide text-[#4A7C59]">
+              LedgeRock at Cricket Creek
+            </p>
+            
+            {/* Social Icons */}
+            <div className="mt-6 flex items-center gap-3">
+              {SOCIAL_LINKS.map((social) => {
+                const Icon = social.icon;
+                return (
+                  <a
+                    key={social.label}
+                    href={social.href}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    aria-label={social.label}
+                    className="flex h-9 w-9 items-center justify-center rounded-full bg-[#4A4E4A]/5 text-[#4A4E4A] transition-all hover:bg-[#4A7C59] hover:text-white"
+                  >
+                    <Icon />
+                  </a>
+                );
+              })}
+            </div>
+          </div>
 
-      {/* Real content — logo, social, contact, copyright — layered cleanly
-          on top, centered rather than split across columns. */}
-      <div className="relative z-10 mx-auto max-w-2xl px-6 py-20 text-center lg:px-8">
-        <img
-          src={logo}
-          alt="Ledge Rock at Cricket Creek"
-          className="mx-auto h-40 w-auto"
-        />
+          {/* Tagline / Callout Column */}
+          <div className="lg:col-span-4">
+            <h3 className="font-headline text-2xl font-bold tracking-tight text-[#4A4E4A]">
+              Experience Lake Living.
+            </h3>
+            <p className="mt-2 text-sm leading-relaxed text-[#6B6358]">
+              Exclusive lakeside residential lots nestled in Omaha, Arkansas. Crafted for tranquility, luxury, and nature.
+            </p>
+            <div className="mt-6 space-y-1 text-sm font-medium text-[#4A4E4A]">
+              <p>13500&ndash;13800 Ledge Rock Lane, Omaha, AR 72662</p>
+              <p>
+                <a href="tel:+12069794955" className="hover:text-[#4A7C59] transition-colors">
+                  (206) 979-4955
+                </a>
+              </p>
+              <p>
+                <a href="mailto:danb@lakeshorepropgrp.com" className="hover:text-[#4A7C59] transition-colors">
+                  danb@lakeshorepropgrp.com
+                </a>
+              </p>
+            </div>
+          </div>
 
-        {/* Social */}
-        <div className="mt-8 flex items-center justify-center gap-3">
-          {SOCIAL_LINKS.map((social) => {
-            const Icon = social.icon;
-            return (
-              <a
-                key={social.label}
-                href={social.href}
-                target="_blank"
-                rel="noopener noreferrer"
-                aria-label={social.label}
-                className="flex h-10 w-10 items-center justify-center rounded-full bg-white/10 text-white transition-colors hover:bg-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-tertiary focus-visible:ring-offset-2 focus-visible:ring-offset-neutral"
-              >
-                <Icon />
-              </a>
-            );
-          })}
+          {/* Quick Navigation Links */}
+          <div className="lg:col-span-4 grid grid-cols-2 gap-8">
+            <div>
+              <h4 className="font-headline text-sm font-bold uppercase tracking-wider text-[#4A4E4A]">
+                Navigation
+              </h4>
+              <ul className="mt-4 space-y-2.5 text-sm text-[#6B6358]">
+                <li><a href="/properties" className="hover:text-[#4A7C59] transition-colors">Available Lots</a></li>
+                <li><a href="/tablerockliving" className="hover:text-[#4A7C59] transition-colors">Location & Map</a></li>
+              </ul>
+            </div>
+            <div>
+              <h4 className="font-headline text-sm font-bold uppercase tracking-wider text-[#4A4E4A]">
+                Company
+              </h4>
+              <ul className="mt-4 space-y-2.5 text-sm text-[#6B6358]">
+                <li><a href="/about" className="hover:text-[#4A7C59] transition-colors">Lakeshore Group</a></li>
+                <li><a href="/contact" className="hover:text-[#4A7C59] transition-colors">Contact Us</a></li>
+                <li><a href="#" className="hover:text-[#4A7C59] transition-colors">Privacy Policy</a></li>
+              </ul>
+            </div>
+          </div>
+
         </div>
 
-        {/* Contact */}
-        <div className="mt-8 space-y-1.5 font-body text-[15px] text-white/80">
-          <p>13500&ndash;13800 Ledge Rock Lane, Omaha, Arkansas 72662</p>
+        {/* Sub-bar overlay info above background */}
+        <div className="mt-16 flex flex-col sm:flex-row items-center justify-between text-xs text-[#6B6358] border-t border-[#4A4E4A]/10 pt-6">
+          <p>&copy; {year} Lakeshore Properties Group, LLC. All rights reserved.</p>
           <p>
-            <a
-              href="tel:+12069794955"
-              className="transition-colors hover:text-tertiary"
-            >
-              (206) 979-4955
-            </a>
-            <span className="mx-2 text-white/30">&middot;</span>
-            <a
-              href="mailto:danb@lakeshorepropgrp.com"
-              className="transition-colors hover:text-tertiary"
-            >
-              danb@lakeshorepropgrp.com
-            </a>
-          </p>
-        </div>
-
-        {/* Bottom bar */}
-        <div className="mt-10 flex flex-col items-center justify-between gap-3 border-t border-white/10 pt-6 sm:flex-row">
-          <p className="font-body text-sm text-white/50">
-            &copy; {year} Lakeshore Properties Group, LLC. All rights reserved.
-          </p>
-          <p className="font-body text-sm text-white/50">
             Site by{" "}
             <a
               href="https://nexuxgh.com"
               target="_blank"
               rel="noopener noreferrer"
-              className="transition-colors hover:text-tertiary"
+              className="font-semibold text-[#4A4E4A] hover:text-[#4A7C59]"
             >
               Nexux
             </a>
           </p>
         </div>
+      </div>
+
+      {/* 2. BOTTOM CINEMATIC LANDSCAPE IMAGE WITH SEAMLESS TOP FADE */}
+      <div className="relative h-64 sm:h-80 w-full overflow-hidden">
+        {/* Top Fade Gradient connecting the light background to the landscape image */}
+        <div className="absolute inset-x-0 top-0 z-10 h-32 bg-gradient-to-b from-[#F2F4F2] via-[#F2F4F2]/60 to-transparent" />
+        
+        {/* Landscape Image */}
+        <img
+          src={footerBg}
+          alt="Ledge Rock Aerial Landscape"
+          className="h-full w-full object-cover object-bottom filter contrast-[1.05] brightness-95"
+        />
+
+        {/* Soft Warm Sunburst Overlay matching Tertiary (#C4A66A) */}
+        <div className="absolute inset-0 bg-gradient-to-tr from-transparent via-[#C4A66A]/10 to-transparent pointer-events-none" />
       </div>
     </footer>
   );
