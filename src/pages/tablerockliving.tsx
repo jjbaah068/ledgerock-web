@@ -9,21 +9,21 @@ import {
 import { Link } from "react-router-dom";
 import Navbar from "../components/navbar";
 import Footer from "../components/footer";
-
+import shorelineImage1 from "../assets/img11.png";
+import communityImage1 from "../assets/img12.png";
+import golfImage1 from "../assets/img13.png";
 
 // PLACEHOLDER IMAGES
-const shorelineImage =
-  "https://images.unsplash.com/photo-1721069662098-f2031c2319b8?w=1600&q=80&auto=format&fit=crop";
+const shorelineImage = shorelineImage1;
 const dockImage =
   "https://images.unsplash.com/photo-1731667251901-60977d1be3fe?w=1600&q=80&auto=format&fit=crop";
-const golfImage =
-  "https://images.unsplash.com/photo-1785843530152-b4b69040aa10?w=1600&q=80&auto=format&fit=crop";
+const golfImage = golfImage1;
 // const concertImage =
 //   "https://images.unsplash.com/photo-1768053921689-1bc09db904c9?w=1600&q=80&auto=format&fit=crop";
 // const canyonImage =
 //   "https://images.unsplash.com/photo-1658779987032-1f04a2960b2e?w=1600&q=80&auto=format&fit=crop";
-const communityImage = 
-  "https://images.unsplash.com/photo-1656076495328-a11c1bd59afa?w=1600&q=80&auto=format&fit=crop";
+const communityImage = communityImage1;
+
 
 
 const EVERYDAY_ESSENTIALS = [

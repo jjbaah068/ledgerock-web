@@ -1,8 +1,12 @@
 import { useState, type FormEvent } from "react";
 import { useSearchParams } from "react-router-dom";
+import { motion } from "motion/react";
 import { Mail, Phone, MapPin, ArrowRight, Navigation } from "lucide-react";
 import Navbar from "../components/navbar";
 import Footer from "../components/footer";
+import handHouse from "../assets/img10.png";
+
+const CINEMATIC_EASE = [0.16, 1, 0.3, 1] as const;
 
 const INTEREST_OPTIONS = [
   "General inquiry",
@@ -42,21 +46,41 @@ export default function Contact() {
     <>
       <Navbar />
 
-      {/* Page header */}
-      <section className="bg-[#FAF7F1] px-6 py-16 lg:px-8">
-        <div className="mx-auto max-w-3xl text-center">
-          <h1 className="font-headline text-4xl font-semibold text-neutral-700 sm:text-5xl">
-            Let&apos;s Talk About Your Lake Home
-          </h1>
-          <p className="mt-4 font-body text-base text-neutral-700/80">
-            Send your questions straight to us, and we will follow up to
-            help you through the transaction.
-          </p>
+      {/* Page header — text and image side by side, vertically centered.
+          Image is static (no floating/looping motion), just a single
+          fade-in on load like the rest of the site's page headers. */}
+      <section className="bg-white px-6 py-16 lg:px-8">
+        <div className="mx-auto grid max-w-5xl grid-cols-1 items-center gap-10 lg:grid-cols-2">
+          <motion.div
+            initial={{ opacity: 0, y: 16, filter: "blur(6px)" }}
+            animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
+            transition={{ duration: 0.8, ease: CINEMATIC_EASE }}
+            className="text-center lg:text-left"
+          >
+            <p className="font-body text-sm font-medium uppercase tracking-[0.2em] text-primary">
+              Contact Us
+            </p>
+            <h1 className="mt-3 font-headline text-4xl font-semibold text-neutral-700 sm:text-5xl">
+              Let&apos;s Talk About Your Lake Home
+            </h1>
+            <p className="mx-auto mt-4 max-w-md font-body text-base text-neutral-700/80 lg:mx-0">
+              Send your questions straight to us, and we will follow up to
+              help you through the transaction.
+            </p>
+          </motion.div>
+
+          <motion.img
+            src={handHouse}
+            alt="A hand presenting a model home"
+            initial={{ opacity: 0, y: 16 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.8, ease: CINEMATIC_EASE, delay: 0.15 }}
+            className="mx-auto h-64 w-auto object-contain sm:h-72"
+          />
         </div>
       </section>
-
       {/* Contact info + form */}
-      <section className="bg-white px-6 py-16 lg:px-8">
+      <section className="border-t border-neutral-100 bg-white px-6 py-16 lg:px-8">
         <div className="mx-auto grid max-w-5xl grid-cols-1 gap-8 md:grid-cols-5">
           {/* Contact information */}
           <div className="md:col-span-2">
