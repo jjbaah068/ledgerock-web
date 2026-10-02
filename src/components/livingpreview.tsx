@@ -2,14 +2,17 @@ import { useRef } from "react";
 import { motion, useScroll, useTransform, useSpring, useReducedMotion } from "motion/react";
 import { Link } from "react-router-dom";
 import { ArrowRight, ArrowDown } from "lucide-react";
+import kayakImage1 from '../assets/waterliving.png'
+import dockImage1 from '../assets/nightliving.png'
+import communityImage1 from '../assets/community.png'
 
 // PLACEHOLDER images — standing in until more real Ledge Rock photography arrives.
 const kayakImage =
-  "https://images.unsplash.com/photo-1740307068303-bd3255a08da9?w=1600&q=80&auto=format&fit=crop";
+  kayakImage1;
 const dockImage =
-  "https://images.unsplash.com/photo-1731667251901-60977d1be3fe?w=1600&q=80&auto=format&fit=crop";
+  dockImage1;
 const communityImage =
-  "https://images.unsplash.com/photo-1656076495328-a11c1bd59afa?w=1600&q=80&auto=format&fit=crop";
+  communityImage1;
 
 const PANELS = [
   {

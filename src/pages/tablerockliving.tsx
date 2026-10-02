@@ -3,15 +3,13 @@ import { motion, useScroll, useTransform } from "motion/react";
 import {
   ShoppingCart,
   Anchor,
-  ArrowDown,
-  ArrowRight
-} from "lucide-react";
-import { Link } from "react-router-dom";
+  ArrowDown} from "lucide-react";
 import Navbar from "../components/navbar";
 import Footer from "../components/footer";
 import shorelineImage1 from "../assets/img11.png";
 import communityImage1 from "../assets/img12.png";
 import golfImage1 from "../assets/img13.png";
+import detective from "../assets/detective.png";
 
 // PLACEHOLDER IMAGES
 const shorelineImage = shorelineImage1;
@@ -46,18 +44,18 @@ const DRIVE_TIMES = [
 const CINEMATIC_EASE = [0.16, 1, 0.3, 1] as const;
 
 // ─── CINEMATIC SCROLL SECTION ────────────────────────────────────────────────
-function ImmersiveSection({ 
-  title, 
-  subtitle, 
-  description, 
-  image, 
-  align = "left" 
-}: { 
-  title: string; 
-  subtitle: string; 
-  description: string; 
-  image: string; 
-  align?: "left" | "right" 
+function ImmersiveSection({
+  title,
+  subtitle,
+  description,
+  image,
+  align = "left"
+}: {
+  title: string;
+  subtitle: string;
+  description: string;
+  image: string;
+  align?: "left" | "right"
 }) {
   const ref = useRef<HTMLDivElement>(null);
   const { scrollYProgress } = useScroll({
@@ -67,27 +65,27 @@ function ImmersiveSection({
 
   const imgY = useTransform(scrollYProgress, [0, 1], ["-10%", "10%"]);
   const imgScale = useTransform(scrollYProgress, [0, 1], [1.1, 1]);
-  
+
   const textY = useTransform(scrollYProgress, [0.3, 0.6], [50, 0]);
   const textOpacity = useTransform(scrollYProgress, [0.3, 0.6], [0, 1]);
 
   return (
     <section ref={ref} className="relative h-[80vh] min-h-[600px] w-full overflow-hidden">
-      <motion.div 
+      <motion.div
         className="absolute inset-0 origin-center"
         style={{ y: imgY, scale: imgScale }}
       >
-        <img 
-          src={image} 
-          alt={title} 
+        <img
+          src={image}
+          alt={title}
           className="h-full w-full object-cover"
         />
       </motion.div>
       <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-transparent" />
-      
+
       <div className={`absolute inset-0 flex flex-col justify-end px-8 pb-24 sm:px-16 lg:pb-32 ${align === "right" ? "items-end text-right" : "items-start text-left"}`}>
-        <motion.div 
-          style={{ y: textY, opacity: textOpacity }} 
+        <motion.div
+          style={{ y: textY, opacity: textOpacity }}
           className="max-w-2xl"
         >
           <p className="mb-4 font-mono text-xs uppercase tracking-[0.25em] text-white/70">
@@ -113,7 +111,7 @@ export default function TableRockLiving() {
     target: heroRef,
     offset: ["start start", "end start"]
   });
-  
+
   const heroY = useTransform(heroScroll, [0, 1], ["0%", "50%"]);
   const heroOpacity = useTransform(heroScroll, [0, 0.8], [1, 0]);
 
@@ -124,7 +122,7 @@ export default function TableRockLiving() {
       {/* ── HERO SECTION ── */}
       <section ref={heroRef} className="relative flex h-screen items-center justify-center overflow-hidden bg-black">
         <motion.div style={{ y: heroY, opacity: heroOpacity }} className="absolute inset-0">
-           <div
+          <div
             aria-hidden
             className="pointer-events-none absolute inset-0 z-20 opacity-[0.035]"
             style={{
@@ -134,14 +132,14 @@ export default function TableRockLiving() {
               mixBlendMode: "overlay",
             }}
           />
-          <img 
-            src={dockImage} 
-            alt="Table Rock Lake" 
-            className="h-full w-full object-cover" 
+          <img
+            src={dockImage}
+            alt="Table Rock Lake"
+            className="h-full w-full object-cover"
           />
           <div className="absolute inset-0 bg-black/40" />
         </motion.div>
-        
+
         <motion.div
           initial={{ opacity: 0, y: 30 }}
           animate={{ opacity: 1, y: 0 }}
@@ -179,7 +177,7 @@ export default function TableRockLiving() {
         image={shorelineImage}
         align="left"
       />
-      
+
       <ImmersiveSection
         subtitle="The Surroundings"
         title="More Than Just a Lake"
@@ -187,7 +185,7 @@ export default function TableRockLiving() {
         image={golfImage}
         align="right"
       />
-      
+
       <ImmersiveSection
         subtitle="The Community"
         title="A Home, Not Just Land"
@@ -295,22 +293,33 @@ export default function TableRockLiving() {
         </div>
       </motion.section>
 
-      {/* ── CLOSING CTA ── */}
-      <section className="bg-neutral px-6 py-24 text-center lg:px-8">
-        <div className="mx-auto max-w-2xl">
-          <h2 className="font-headline text-3xl font-semibold text-white sm:text-4xl">
-            See What&apos;s Available
+          {/* Closing CTA */}
+      <section className="relative overflow-hidden bg-neutral px-6 py-16 text-center lg:px-8">
+        <div className="relative mx-auto max-w-2xl">
+          {/* Decorative — positioned relative to the same narrow column as
+              the text (not the full section width), so it sits close to
+              the headline instead of stranded at the page edge. */}
+          <motion.img
+            src={detective}
+            alt=""
+            aria-hidden="true"
+            initial={{ opacity: 0, x: -20 }}
+            animate={{ opacity: 0.9, x: 0 }}
+            transition={{ duration: 0.9, ease: CINEMATIC_EASE }}
+            className="pointer-events-none absolute -left-20 bottom-0 hidden h-40 w-auto sm:block lg:-left-28 lg:h-48"
+          />
+
+          <h2 className="font-headline text-2xl font-semibold text-white sm:text-3xl">
+            See What&apos;s Available at Ledge Rock
           </h2>
-          <Link
-            to="/properties"
-            className="mt-8 inline-flex items-center gap-2.5 rounded-full border border-white/20 bg-white/10 px-8 py-4 font-body text-[15px] font-medium text-white backdrop-blur-sm transition-all duration-300 hover:border-white/40 hover:bg-white/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:ring-offset-neutral"
+          <a
+            href="/properties"
+            className="mt-6 inline-block rounded-full bg-primary px-7 py-3 font-body text-[15px] font-medium text-white transition-colors hover:bg-primary-dark focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:ring-offset-neutral"
           >
             Explore Available Lots
-            <ArrowRight className="h-4 w-4" />
-          </Link>
+          </a>
         </div>
       </section>
-
       <Footer />
     </div>
   );

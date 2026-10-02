@@ -4,11 +4,15 @@ import Footer from "../components/footer";
 import masterPlan from "../assets/img6.png";
 import aboutCover from "../assets/img8.png";
 import entrance from "../assets/img7.png";
+import shorelineImage1 from '../assets/img11.png'
+import dockImage1 from '../assets/nightliving.png'
+import pointingFigure from '../assets/pointingfigure.png'
 
 const shorelineImage =
-  "https://images.unsplash.com/photo-1721069662098-f2031c2319b8?w=900&q=80&auto=format&fit=crop";
+  shorelineImage1;
 const dockImage =
-  "https://images.unsplash.com/photo-1731667251901-60977d1be3fe?w=900&q=80&auto=format&fit=crop";
+  dockImage1;
+
 
 const STATS = [
   { label: "Founded", value: "2014" },
@@ -267,17 +271,28 @@ export default function About() {
       <section className="relative overflow-hidden bg-neutral-900 px-6 py-24 text-center lg:px-8">
         <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-neutral-800 via-neutral-900 to-black opacity-50" />
         
-        <motion.div
+         <motion.div
           initial="hidden"
           whileInView="visible"
           viewport={{ once: true, margin: "-100px" }}
           variants={staggerContainer}
           className="relative z-10 mx-auto max-w-2xl"
         >
-          <motion.h2 variants={fadeUp} className="font-headline text-3xl font-semibold text-white lg:text-4xl">
-            Looking to the Horizon
-          </motion.h2>
-          <motion.p variants={fadeUp} className="mt-6 font-body text-[16px] leading-relaxed text-neutral-300">
+               {/* Wrapper */}
+          <div className="relative inline-block">
+            <motion.img
+              variants={fadeUp}
+              src={pointingFigure}
+              alt=""
+              aria-hidden="true"
+              className="pointer-events-none absolute -left-24 top-1/2 hidden h-24 w-auto -translate-y-1/2 opacity-90 sm:block lg:-left-32 lg:h-32"
+            />
+
+            <motion.h2 variants={fadeUp} className="font-headline text-3xl font-semibold text-white lg:text-4xl">
+              Looking to the Horizon
+            </motion.h2>
+          </div>
+          <motion.p variants={fadeUp} className="mt-8 font-body text-[16px] leading-relaxed text-neutral-300">
             Lakeshore Properties Group has acquired adjacent parcels for future development, and will be releasing exclusive mountaintop lakeview properties in the near future.
           </motion.p>
           <motion.div variants={fadeUp} className="mt-10">
