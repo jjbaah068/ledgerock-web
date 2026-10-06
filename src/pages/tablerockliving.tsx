@@ -10,11 +10,11 @@ import shorelineImage1 from "../assets/img11.png";
 import communityImage1 from "../assets/img12.png";
 import golfImage1 from "../assets/img13.png";
 import detective from "../assets/detective.png";
+import dockImage1 from "../assets/waterliving.png";
 
 // PLACEHOLDER IMAGES
 const shorelineImage = shorelineImage1;
-const dockImage =
-  "https://images.unsplash.com/photo-1731667251901-60977d1be3fe?w=1600&q=80&auto=format&fit=crop";
+const dockImage = dockImage1;
 const golfImage = golfImage1;
 // const concertImage =
 //   "https://images.unsplash.com/photo-1768053921689-1bc09db904c9?w=1600&q=80&auto=format&fit=crop";
