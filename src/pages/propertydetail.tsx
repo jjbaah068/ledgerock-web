@@ -158,9 +158,13 @@ export default function PropertyDetail() {
                                     }}
                                     className="overflow-hidden rounded-2xl"
                                 >
-                                    <img
+                                    <img loading="lazy" decoding="async"
                                         src={src}
-                                        alt="Example home built at Ledge Rock"
+                                        alt={
+                                            lot.isPlaceholderImage
+                                                ? "Example home built at Ledge Rock"
+                                                : `${lot.name} at Ledge Rock at Cricket Creek`
+                                        }
                                         className="h-[200px] w-full object-cover"
                                     />
                                 </motion.div>

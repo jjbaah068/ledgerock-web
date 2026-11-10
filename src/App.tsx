@@ -1,4 +1,5 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
+import { LenisContext } from "./lib/lenis.ts";
 import { createBrowserRouter, Outlet, RouterProvider } from "react-router";
 import Home from "./pages/home.tsx";
 import About from "./pages/about.tsx";
@@ -8,29 +9,40 @@ import Property from "./pages/properties.tsx";
 import PropertyDetail from "./pages/propertydetail.tsx";
 import TableRockLiving from "./pages/tablerockliving.tsx";
 import ScrollToTop from "./components/scrolltotop.tsx";
+import Privacy from "./pages/privacy.tsx";
 
 
 function RootLayout() {
+  const [lenis, setLenis] = useState<Lenis | null>(null);
+
   useEffect(() => {
-    const lenis = new Lenis({
+    const instance = new Lenis({
       duration: 1.1,
       stopInertiaOnNavigate: true,
     });
+    // Share the instance with children (e.g. the hero's scroll scrub) via context.
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- Lenis must be created in an effect so it's destroyed on unmount.
+    setLenis(instance);
 
+    let rafId = 0;
     function raf(time: number) {
-      lenis.raf(time);
-      requestAnimationFrame(raf);
+      instance.raf(time);
+      rafId = requestAnimationFrame(raf);
     }
-    requestAnimationFrame(raf);
+    rafId = requestAnimationFrame(raf);
 
-    return () => lenis.destroy();
+    return () => {
+      cancelAnimationFrame(rafId);
+      instance.destroy();
+      setLenis(null);
+    };
   }, []);
 
   return (
-    <>
+    <LenisContext.Provider value={lenis}>
       <ScrollToTop />
       <Outlet />
-    </>
+    </LenisContext.Provider>
   );
 }
 
@@ -44,6 +56,7 @@ const ledgerockRouter = createBrowserRouter([
             { path: "/properties", element: <Property /> },
             { path: "/properties/:lotId", element: <PropertyDetail /> },
             { path: "/tablerockliving", element: <TableRockLiving /> },
+            { path: "/privacy", element: <Privacy /> },
         ],
     },
 ]);

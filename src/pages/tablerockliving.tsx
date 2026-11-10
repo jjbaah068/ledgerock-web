@@ -6,11 +6,11 @@ import {
   ArrowDown} from "lucide-react";
 import Navbar from "../components/navbar";
 import Footer from "../components/footer";
-import shorelineImage1 from "../assets/img11.png";
-import communityImage1 from "../assets/img12.png";
-import golfImage1 from "../assets/img13.png";
-import detective from "../assets/detective.png";
-import dockImage1 from "../assets/waterliving.png";
+import shorelineImage1 from "../assets/img11.webp";
+import communityImage1 from "../assets/Lasater-14.webp";
+import golfImage1 from "../assets/img13.webp";
+import detective from "../assets/detective.webp";
+import dockImage1 from "../assets/Lasater-2.webp";
 
 // PLACEHOLDER IMAGES
 const shorelineImage = shorelineImage1;
@@ -75,7 +75,7 @@ function ImmersiveSection({
         className="absolute inset-0 origin-center"
         style={{ y: imgY, scale: imgScale }}
       >
-        <img
+        <img loading="lazy" decoding="async"
           src={image}
           alt={title}
           className="h-full w-full object-cover"

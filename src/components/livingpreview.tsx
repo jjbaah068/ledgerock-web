@@ -2,9 +2,9 @@ import { useRef } from "react";
 import { motion, useScroll, useTransform, useSpring, useReducedMotion } from "motion/react";
 import { Link } from "react-router-dom";
 import { ArrowRight, ArrowDown } from "lucide-react";
-import kayakImage1 from '../assets/waterliving.png'
-import dockImage1 from '../assets/nightliving.png'
-import communityImage1 from '../assets/community.png'
+import kayakImage1 from '../assets/waterliving.webp'
+import dockImage1 from '../assets/nightliving.webp'
+import communityImage1 from '../assets/community.webp'
 
 // PLACEHOLDER images — standing in until more real Ledge Rock photography arrives.
 const kayakImage =
@@ -75,7 +75,7 @@ export default function LivingPreview() {
         <div className="mx-auto mt-12 grid max-w-5xl grid-cols-1 gap-6 sm:grid-cols-3">
           {PANELS.map((panel) => (
             <div key={panel.label} className="overflow-hidden rounded-2xl">
-              <img src={panel.image} alt={panel.label} className="h-64 w-full object-cover" />
+              <img loading="lazy" decoding="async" src={panel.image} alt={panel.label} className="h-64 w-full object-cover" />
               <div className="bg-white/5 p-5">
                 <p className="font-body text-sm font-medium text-white">{panel.label}</p>
                 <p className="mt-1 font-body text-sm text-white/70">{panel.copy}</p>

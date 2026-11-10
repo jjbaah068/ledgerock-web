@@ -1,5 +1,5 @@
-import logo from "../assets/logo.png";
-import footerBg from "../assets/img2.png";
+import logo from "../assets/logo.webp";
+import footerBg from "../assets/img2.webp";
 
 function FacebookIcon() {
   return (
@@ -33,7 +33,7 @@ export default function Footer() {
           
           {/* Brand & Socials Column */}
           <div className="lg:col-span-4 flex flex-col items-start">
-            <img
+            <img loading="lazy" decoding="async"
               src={logo}
               alt="Ledge Rock at Cricket Creek"
               className="h-16 sm:h-20 w-auto object-contain"
@@ -103,7 +103,7 @@ export default function Footer() {
               <ul className="mt-4 space-y-2.5 text-sm text-[#6B6358]">
                 <li><a href="/about" className="hover:text-[#4A7C59] transition-colors">Lakeshore Group</a></li>
                 <li><a href="/contact" className="hover:text-[#4A7C59] transition-colors">Contact Us</a></li>
-                <li><a href="#" className="hover:text-[#4A7C59] transition-colors">Privacy Policy</a></li>
+                <li><a href="/privacy" className="hover:text-[#4A7C59] transition-colors">Privacy Policy</a></li>
               </ul>
             </div>
           </div>
@@ -133,7 +133,7 @@ export default function Footer() {
         <div className="absolute inset-x-0 top-0 z-10 h-32 bg-gradient-to-b from-[#F2F4F2] via-[#F2F4F2]/60 to-transparent" />
         
         {/* Landscape Image */}
-        <img
+        <img loading="lazy" decoding="async"
           src={footerBg}
           alt="Ledge Rock Aerial Landscape"
           className="h-full w-full object-cover object-bottom filter contrast-[1.05] brightness-95"

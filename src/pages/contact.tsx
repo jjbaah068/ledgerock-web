@@ -4,7 +4,7 @@ import { motion } from "motion/react";
 import { Mail, Phone, MapPin, ArrowRight, Navigation } from "lucide-react";
 import Navbar from "../components/navbar";
 import Footer from "../components/footer";
-import handHouse from "../assets/img10.png";
+import handHouse from "../assets/img10.webp";
 
 const CINEMATIC_EASE = [0.16, 1, 0.3, 1] as const;
 

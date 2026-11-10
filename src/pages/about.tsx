@@ -1,12 +1,13 @@
 import { motion } from "motion/react";
 import Navbar from "../components/navbar";
 import Footer from "../components/footer";
-import masterPlan from "../assets/img6.png";
-import aboutCover from "../assets/img8.png";
-import entrance from "../assets/img7.png";
-import shorelineImage1 from '../assets/img11.png'
-import dockImage1 from '../assets/nightliving.png'
-import pointingFigure from '../assets/pointingfigure.png'
+import masterPlan from "../assets/img6.webp";
+import aboutHeroLg from "../assets/about-hero-1920.jpg";
+import aboutHeroSm from "../assets/about-hero-1280.jpg";
+import entrance from "../assets/img7.webp";
+import shorelineImage1 from '../assets/img11.webp'
+import dockImage1 from '../assets/nightliving.webp'
+import pointingFigure from '../assets/pointingfigure.webp'
 
 const shorelineImage =
   shorelineImage1;
@@ -69,56 +70,73 @@ function InitialsAvatar({ initials, name, tone }: { initials: string; name: stri
 export default function About() {
   return (
     <div className="bg-neutral-50">
-      <Navbar transparent />
+      <Navbar />
 
-      {/* Hero Section */}
-      <section className="relative flex min-h-[75vh] items-center justify-center overflow-hidden">
-        <motion.img
-          initial={{ scale: 1.05 }}
-          animate={{ scale: 1 }}
-          transition={{ duration: 1.5, ease: "easeOut" }}
-          src={aboutCover}
-          alt="Table Rock Lake at Ledge Rock at Cricket Creek"
-          className="absolute inset-0 h-full w-full object-cover"
-        />
-        <div className="absolute inset-0 bg-gradient-to-b from-black/60 via-black/40 to-black/80" />
+      {/* Hero Section — headline + stats above, photo below (no text on the image) */}
+      <section className="bg-[#FAF7F1] px-4 pb-6 pt-10 sm:px-6 lg:px-8 lg:pb-8 lg:pt-16">
+        <div className="mx-auto grid max-w-7xl gap-10 px-2 lg:grid-cols-12 lg:items-end lg:gap-12">
+          <motion.div
+            initial="hidden"
+            animate="visible"
+            variants={staggerContainer}
+            className="lg:col-span-7"
+          >
+            <motion.p
+              variants={fadeUp}
+              className="mb-5 flex items-center gap-3 font-body text-xs font-medium uppercase tracking-[0.2em] text-primary"
+            >
+              <span aria-hidden="true" className="h-px w-10 bg-tertiary" />
+              About Ledge Rock
+            </motion.p>
+            <motion.h1
+              variants={fadeUp}
+              className="font-headline text-4xl font-semibold leading-[1.05] tracking-tight text-neutral-800 sm:text-5xl lg:text-6xl xl:text-7xl"
+            >
+              An Architect&apos;s Return to Table Rock
+            </motion.h1>
+          </motion.div>
 
+          <motion.dl
+            initial="hidden"
+            animate="visible"
+            variants={staggerContainer}
+            className="grid grid-cols-2 gap-x-8 gap-y-6 border-t border-neutral-200 pt-6 sm:grid-cols-4 lg:col-span-5 lg:grid-cols-2 lg:border-l lg:border-t-0 lg:pl-12 lg:pt-0"
+          >
+            {STATS.map((stat) => (
+              <motion.div key={stat.label} variants={fadeUp} className="flex flex-col-reverse">
+                <dt className="mt-1 font-body text-[11px] font-medium uppercase tracking-[0.15em] text-neutral-500">
+                  {stat.label}
+                </dt>
+                <dd className="font-headline text-3xl font-semibold text-primary lg:text-4xl">
+                  {stat.value}
+                </dd>
+              </motion.div>
+            ))}
+          </motion.dl>
+        </div>
+
+        {/* Framed photo, revealed from a narrower crop */}
         <motion.div
-          initial="hidden"
-          animate="visible"
-          variants={staggerContainer}
-          className="relative z-10 mx-auto max-w-4xl px-6 text-center text-white"
+          initial={{ clipPath: "inset(6% 10% 0% 10% round 24px)" }}
+          animate={{ clipPath: "inset(0% 0% 0% 0% round 24px)" }}
+          transition={{ duration: 1.6, delay: 0.3, ease: CINEMATIC_EASE }}
+          className="mx-auto mt-10 max-w-7xl overflow-hidden rounded-3xl bg-neutral lg:mt-14"
         >
-          <motion.h1 variants={fadeUp} className="font-headline text-4xl font-semibold leading-tight tracking-tight sm:text-5xl lg:text-7xl">
-            An Architect&apos;s Return to Table Rock Lake
-          </motion.h1>
-          <motion.p variants={fadeUp} className="mx-auto mt-6 max-w-2xl font-body text-lg text-white/80 md:text-xl">
-            Lakeshore Properties Group, LLC was formed in 2014 to bring one
-            architect&apos;s vision for lakeside living back to the water he grew up on.
-          </motion.p>
+          <motion.img
+            initial={{ scale: 1.12 }}
+            animate={{ scale: 1 }}
+            transition={{ duration: 2, delay: 0.3, ease: CINEMATIC_EASE }}
+            src={aboutHeroSm}
+            srcSet={`${aboutHeroSm} 1280w, ${aboutHeroLg} 1920w`}
+            sizes="(min-width: 1280px) 1280px, 100vw"
+            width={1920}
+            height={1438}
+            fetchPriority="high"
+            alt="The stone-pillared entrance gate at Ledge Rock at Cricket Creek, opening onto a tree-lined drive"
+            className="aspect-[4/3] w-full object-cover object-[center_55%] sm:aspect-[16/9] lg:aspect-[21/9]"
+          />
         </motion.div>
       </section>
-
-      {/* Overlapping Stats Strip */}
-      <div className="relative z-20 mx-auto -mt-16 max-w-6xl px-6 lg:px-8">
-        <motion.div
-          initial={{ opacity: 0, y: 30 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.8, ease: CINEMATIC_EASE, delay: 0.4 }}
-          className="grid grid-cols-2 divide-x divide-neutral-100 rounded-2xl bg-white p-8 shadow-xl shadow-black/5 ring-1 ring-neutral-200/50 sm:grid-cols-4 lg:p-10"
-        >
-          {STATS.map((stat, idx) => (
-            <div key={stat.label} className={`px-4 text-center ${idx === 0 ? "pl-0" : ""} ${idx === STATS.length - 1 ? "pr-0" : ""}`}>
-              <p className="font-headline text-3xl font-bold text-primary lg:text-4xl">
-                {stat.value}
-              </p>
-              <p className="mt-2 font-body text-xs font-medium uppercase tracking-wider text-neutral-500">
-                {stat.label}
-              </p>
-            </div>
-          ))}
-        </motion.div>
-      </div>
 
       {/* Unified Team Section */}
       <section className="px-6 py-24 lg:px-8 lg:py-32">
@@ -233,7 +251,7 @@ export default function About() {
                   Explore available lots
                 </a>
               </div>
-              <img
+              <img loading="lazy" decoding="async"
                 src={masterPlan}
                 alt="Master site plan"
                 className="mt-8 w-full rounded-xl object-contain shadow-sm ring-1 ring-neutral-900/5"
@@ -251,7 +269,7 @@ export default function About() {
                   transition={{ duration: 0.7, delay: idx * 0.1, ease: CINEMATIC_EASE }}
                   className={`group relative overflow-hidden rounded-3xl ${idx === 0 ? "sm:col-span-2 sm:h-80" : "h-64 sm:h-auto"}`}
                 >
-                  <img
+                  <img loading="lazy" decoding="async"
                     src={item.image}
                     alt={item.label}
                     className="h-full w-full object-cover transition-transform duration-700 ease-out group-hover:scale-105"

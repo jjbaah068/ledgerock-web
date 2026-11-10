@@ -200,7 +200,7 @@ export default function Properties() {
                 >
                   {/* Expansive Image Side */}
                   <div className="relative h-[350px] w-full overflow-hidden rounded-2xl md:h-[500px] md:w-3/5">
-                    <img
+                    <img loading="lazy" decoding="async"
                       src={lot.image}
                       alt={
                         lot.isPlaceholderImage
