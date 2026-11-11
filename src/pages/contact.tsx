@@ -3,6 +3,8 @@ import { useSearchParams } from "react-router-dom";
 import { Mail, Phone, MapPin, ArrowRight, Navigation } from "lucide-react";
 import Navbar from "../components/navbar";
 import Footer from "../components/footer";
+import { LOTS } from "../data/lots";
+import { addAdminInquiry } from "../data/admindashboard";
 
 const INTEREST_OPTIONS = [
   "General inquiry",
@@ -31,7 +33,23 @@ export default function Contact() {
 
     setIsSubmitting(true);
 
-    console.log("Contact form submission:", Object.fromEntries(formData));
+    // Send the message to the admin Inquiries inbox.
+    // TODO: post to a backend or form service so messages reach the admin
+    // from any visitor's device, not just this browser.
+    const text = (key: string) => String(formData.get(key) ?? "").trim();
+    const lot = lotParam
+      ? LOTS.find((l) => l.id === lotParam || l.name === lotParam)
+      : undefined;
+    addAdminInquiry({
+      name: text("name"),
+      email: text("email"),
+      phone: text("phone") || undefined,
+      message: text("message"),
+      topic: text("interest") || undefined,
+      property: lot
+        ? { title: lot.name, lotId: lot.id, href: `/properties/${lot.id}` }
+        : undefined,
+    });
 
     setIsSubmitting(false);
     setIsSubmitted(true);

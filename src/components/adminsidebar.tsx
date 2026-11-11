@@ -1,0 +1,184 @@
+import { useRef, useState, type ChangeEvent } from "react";
+import { useLocation } from "react-router-dom";
+import {
+  Building2,
+  Camera,
+  LayoutDashboard,
+  LogOut,
+  Mail,
+  Settings,
+} from "lucide-react";
+import {
+  Sidebar,
+  SidebarContent,
+  SidebarFooter,
+  SidebarGroup,
+  SidebarGroupContent,
+  SidebarHeader,
+  SidebarMenu,
+  SidebarMenuBadge,
+  SidebarMenuButton,
+  SidebarMenuItem,
+  SidebarRail,
+} from "@/components/ui/sidebar";
+import { initials, resizeAvatar, type AdminSession } from "@/lib/adminsession";
+import { getDashboardStats } from "@/data/admindashboard";
+import { useAdminDataVersion } from "@/hooks/use-admin-data";
+
+const NAV_ITEMS = [
+  { label: "Dashboard", href: "/admin/dashboard", icon: LayoutDashboard },
+  { label: "Properties", href: "/admin/properties", icon: Building2 },
+  { label: "Inquiries", href: "/admin/inquiries", icon: Mail, badge: "newInquiries" as const },
+  { label: "Settings", href: "/admin/settings", icon: Settings },
+];
+
+interface AdminSidebarProps {
+  admin: AdminSession;
+  /** Called with a new photo (data URL), or undefined to remove it. */
+  onAvatarChange: (avatarUrl: string | undefined) => void;
+  onLogout: () => void;
+}
+
+export default function AdminSidebar({ admin, onAvatarChange, onLogout }: AdminSidebarProps) {
+  const { pathname } = useLocation();
+  useAdminDataVersion(); // keep the Inquiries badge current
+  const stats = getDashboardStats();
+  const fileInput = useRef<HTMLInputElement>(null);
+  const [photoError, setPhotoError] = useState<string | null>(null);
+
+  async function handlePhoto(event: ChangeEvent<HTMLInputElement>) {
+    const file = event.target.files?.[0];
+    event.target.value = "";
+    if (!file) return;
+    if (!file.type.startsWith("image/")) {
+      setPhotoError("Please choose an image file.");
+      return;
+    }
+    try {
+      onAvatarChange(await resizeAvatar(file));
+      setPhotoError(null);
+    } catch {
+      setPhotoError("That image couldn't be loaded.");
+    }
+  }
+
+  return (
+    <Sidebar collapsible="icon">
+      {/* Signed-in admin */}
+      <SidebarHeader className="pt-5">
+        <SidebarMenu>
+          <SidebarMenuItem>
+            <div className="flex items-center gap-3 px-1 group-data-[collapsible=icon]:px-0">
+              <button
+                type="button"
+                onClick={() => fileInput.current?.click()}
+                aria-label={admin.avatarUrl ? "Change profile photo" : "Add profile photo"}
+                title={admin.avatarUrl ? "Change profile photo" : "Add profile photo"}
+                className="group/avatar relative size-11 shrink-0 rounded-full ring-2 ring-white transition focus-visible:outline-none focus-visible:ring-sidebar-ring group-data-[collapsible=icon]:size-8"
+              >
+                {admin.avatarUrl ? (
+                  <img
+                    src={admin.avatarUrl}
+                    alt=""
+                    className="size-full rounded-full object-cover"
+                  />
+                ) : (
+                  <span
+                    aria-hidden="true"
+                    className="flex size-full items-center justify-center rounded-full bg-primary font-body text-sm font-semibold text-white"
+                  >
+                    {initials(admin.name)}
+                  </span>
+                )}
+                <span
+                  aria-hidden="true"
+                  className="absolute inset-0 flex items-center justify-center rounded-full bg-black/45 text-white opacity-0 transition group-hover/avatar:opacity-100 group-focus-visible/avatar:opacity-100"
+                >
+                  <Camera className="size-4" />
+                </span>
+              </button>
+              <div className="min-w-0 group-data-[collapsible=icon]:hidden">
+                <p className="truncate font-headline text-lg font-semibold leading-tight text-primary">
+                  {admin.name}
+                </p>
+                <p className="font-body text-xs text-sidebar-foreground/70">
+                  {admin.role}
+                </p>
+                {admin.avatarUrl && (
+                  <button
+                    type="button"
+                    onClick={() => onAvatarChange(undefined)}
+                    className="mt-0.5 rounded-sm font-body text-[11px] text-sidebar-foreground/60 underline-offset-2 hover:text-red-600 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sidebar-ring"
+                  >
+                    Remove photo
+                  </button>
+                )}
+              </div>
+            </div>
+            <input
+              ref={fileInput}
+              type="file"
+              accept="image/*"
+              onChange={handlePhoto}
+              className="sr-only"
+              tabIndex={-1}
+              aria-hidden="true"
+            />
+            {photoError && (
+              <p role="alert" className="mt-2 px-1 font-body text-xs text-red-600 group-data-[collapsible=icon]:hidden">
+                {photoError}
+              </p>
+            )}
+          </SidebarMenuItem>
+        </SidebarMenu>
+      </SidebarHeader>
+
+      {/* Navigation */}
+      <SidebarContent className="pt-4">
+        <SidebarGroup>
+          <SidebarGroupContent>
+            <SidebarMenu className="gap-3">
+              {NAV_ITEMS.map(({ label, href, icon: Icon, badge }) => {
+                const isActive = pathname.startsWith(href);
+                const count = badge ? stats[badge] : 0;
+                return (
+                  <SidebarMenuItem key={href}>
+                    <SidebarMenuButton
+                      href={href}
+                      isActive={isActive}
+                      tooltip={label}
+                      aria-current={isActive ? "page" : undefined}
+                      className="h-10 font-body data-active:bg-sidebar-primary data-active:text-sidebar-primary-foreground data-active:hover:bg-primary-dark data-active:hover:text-white"
+                    >
+                      <Icon />
+                      <span>{label}</span>
+                    </SidebarMenuButton>
+                    {count > 0 && (
+                      <SidebarMenuBadge className="rounded-full bg-tertiary text-white peer-data-active/menu-button:text-white">
+                        {count}
+                        <span className="sr-only"> new</span>
+                      </SidebarMenuBadge>
+                    )}
+                  </SidebarMenuItem>
+                );
+              })}
+            </SidebarMenu>
+          </SidebarGroupContent>
+        </SidebarGroup>
+      </SidebarContent>
+
+      {/* Logout */}
+      <SidebarFooter className="border-t border-sidebar-border pb-4 pt-3">
+        <SidebarMenu>
+          <SidebarMenuItem>
+            <SidebarMenuButton onPress={onLogout} tooltip="Logout" className="font-body">
+              <LogOut />
+              <span>Logout</span>
+            </SidebarMenuButton>
+          </SidebarMenuItem>
+        </SidebarMenu>
+      </SidebarFooter>
+      <SidebarRail />
+    </Sidebar>
+  );
+}
