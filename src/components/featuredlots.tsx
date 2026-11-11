@@ -1,8 +1,8 @@
 import { motion, type Variants } from "motion/react";
 import { MapPin, Ruler, Waves } from "lucide-react";
-import lotimg1 from "../assets/img2.png";
-import lotimg2 from "../assets/img3.png";
-import lotimg3 from "../assets/img4.png";
+import lotimg1 from "../assets/img2.webp";
+import lotimg2 from "../assets/img3.webp";
+import lotimg3 from "../assets/img4.webp";
 
 type LotStatus = "Available" | "Reserved" | "Sold";
 
@@ -113,7 +113,7 @@ export default function FeaturedLots() {
               {/* Image + status badge — slow zoom on hover, like a photo
                   that's gently alive rather than static. */}
               <div className="relative h-56 w-full overflow-hidden">
-                <img
+                <img loading="lazy" decoding="async"
                   src={lot.image}
                   alt={`${lot.name} at Ledge Rock at Cricket Creek`}
                   className="h-full w-full object-cover transition-transform duration-700 ease-out group-hover:scale-105"

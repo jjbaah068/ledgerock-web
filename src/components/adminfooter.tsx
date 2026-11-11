@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import logo from "@/assets/logo.png";
+import logo from "@/assets/logo.webp";
 
 /** Slim footer strip for admin pages: logo on the left, copyright on the right. */
 export default function AdminFooter() {

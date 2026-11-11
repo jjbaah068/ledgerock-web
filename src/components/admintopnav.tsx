@@ -1,5 +1,5 @@
 import { Link, NavLink } from "react-router-dom";
-import logo from "@/assets/logo.png";
+import logo from "@/assets/logo.webp";
 
 /*
  * Site links shown across the top of admin pages that need them.

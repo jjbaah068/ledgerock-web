@@ -2,9 +2,14 @@
 // acreage, and shoreline footage per lot (open item from the SRS, OI-1).
 
 
-import exampleHome1 from "../assets/img3.png";
-import exampleHome2 from "../assets/img4.png";
-import exampleHome3 from "../assets/img5.png";
+import exampleHome1 from "../assets/img3.webp";
+import exampleHome2 from "../assets/img4.webp";
+import exampleHome3 from "../assets/img5.webp";
+import lotPhoto1 from "../assets/Lasater-16.webp";
+import lotPhoto2 from "../assets/Lasater-13.webp";
+import lotPhoto3 from "../assets/Lasater-21.webp";
+import lot5Photo from "../assets/Lasater-19.webp";
+import lot6Photo from "../assets/Lasater-28.webp";
 
 export type LotStatus = "Available" | "Reserved" | "Sold";
 
@@ -36,7 +41,6 @@ export const LOTS: Lot[] = [
       shoreline: "210 ft shoreline",
       viewType: "Lakefront",
       image: exampleHome1,
-      isPlaceholderImage: true,
       description: INFRASTRUCTURE_NOTE,
       gallery: [exampleHome1, exampleHome2, exampleHome3]
   },
@@ -48,10 +52,9 @@ export const LOTS: Lot[] = [
       acreage: "0.9 acres",
       shoreline: "Lake access via Dock Road",
       viewType: "Lakeview",
-      image: exampleHome2,
-      isPlaceholderImage: true,
+      image: lotPhoto1,
       description: INFRASTRUCTURE_NOTE,
-      gallery: [exampleHome1, exampleHome2, exampleHome3]
+      gallery: [lotPhoto1, lotPhoto2, lotPhoto3]
   },
   {
       id: "lot-3",
@@ -61,10 +64,9 @@ export const LOTS: Lot[] = [
       acreage: "1.2 acres",
       shoreline: "185 ft shoreline",
       viewType: "Lakefront",
-      image: exampleHome1,
-      isPlaceholderImage: true,
+      image: lotPhoto2,
       description: INFRASTRUCTURE_NOTE,
-      gallery: [exampleHome1, exampleHome2, exampleHome3]
+      gallery: [lotPhoto2, lotPhoto3, lotPhoto1]
   },
   {
       id: "lot-4",
@@ -74,10 +76,9 @@ export const LOTS: Lot[] = [
       acreage: "1.1 acres",
       shoreline: "210 ft shoreline",
       viewType: "Lakefront",
-      image: exampleHome2,
-      isPlaceholderImage: true,
+      image: lotPhoto3,
       description: INFRASTRUCTURE_NOTE,
-      gallery: [exampleHome1, exampleHome2, exampleHome3]
+      gallery: [lotPhoto3, lotPhoto1, lotPhoto2]
   },
   {
       id: "lot-5",
@@ -87,10 +88,9 @@ export const LOTS: Lot[] = [
       acreage: "0.95 acres",
       shoreline: "Lake access via Dock Road",
       viewType: "Lakeview",
-      image: exampleHome1,
-      isPlaceholderImage: true,
+      image: lot5Photo,
       description: INFRASTRUCTURE_NOTE,
-      gallery: [exampleHome1, exampleHome2, exampleHome3]
+      gallery: [lot5Photo, lotPhoto1, lotPhoto2]
   },
   {
       id: "lot-6",
@@ -100,10 +100,9 @@ export const LOTS: Lot[] = [
       acreage: "1.3 acres",
       shoreline: "180 ft shoreline",
       viewType: "Lakefront",
-      image: exampleHome2,
-      isPlaceholderImage: true,
+      image: lot6Photo,
       description: INFRASTRUCTURE_NOTE,
-      gallery: [exampleHome1, exampleHome2, exampleHome3]
+      gallery: [lot6Photo, lotPhoto2, lotPhoto3]
   },
   {
       id: "lot-7",
@@ -113,10 +112,9 @@ export const LOTS: Lot[] = [
       acreage: "1.0 acres",
       shoreline: "Lake access via Dock Road",
       viewType: "Lakeview",
-      image: exampleHome1,
-      isPlaceholderImage: true,
+      image: lotPhoto3,
       description: INFRASTRUCTURE_NOTE,
-      gallery: [exampleHome1, exampleHome2, exampleHome3]
+      gallery: [lotPhoto3, lotPhoto1, lotPhoto2]
   },
 ];
 

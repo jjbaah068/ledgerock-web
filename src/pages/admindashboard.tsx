@@ -12,7 +12,7 @@ import {
 } from "lucide-react";
 import { useAdmin } from "@/components/adminlayout";
 import { firstName } from "@/lib/adminsession";
-import logo from "@/assets/logo.png";
+import logo from "@/assets/logo.webp";
 import { useAdminDataVersion } from "@/hooks/use-admin-data";
 import {
   getDashboardStats,

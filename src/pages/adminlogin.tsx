@@ -4,7 +4,7 @@ import { useNavigate } from "react-router-dom";
 import AdminAuthLayout from "../components/adminauthlayout";
 import { signInAdmin } from "../lib/adminsession";
 import adminImage from "../assets/ldgeA1.jpg";
-import logo from "../assets/logo.png";
+import logo from "../assets/logo.webp";
 
 const ADMIN_LOGIN_IMAGE = adminImage;
 const ADMIN_LOGIN_IMAGE_ALT = "Lakefront home at dusk on Table Rock Lake";

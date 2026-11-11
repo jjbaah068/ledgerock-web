@@ -14,7 +14,7 @@ import {
   SidebarTrigger,
 } from "@/components/ui/sidebar";
 import AdminSidebar from "@/components/adminsidebar";
-import logo from "@/assets/logo.png";
+import logo from "@/assets/logo.webp";
 import {
   getAdminSession,
   signOutAdmin,

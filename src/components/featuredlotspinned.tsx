@@ -1,9 +1,9 @@
 import { useEffect, useRef, useState } from "react";
 import { motion } from "motion/react";
 import { MapPin, Ruler, Waves, ArrowRight } from "lucide-react";
-import lotimg1 from "../assets/img2.png";
-import lotimg2 from "../assets/img3.png";
-import lotimg3 from "../assets/img4.png";
+import lotimg1 from "../assets/img2.webp";
+import lotimg2 from "../assets/img3.webp";
+import lotimg3 from "../assets/img4.webp";
 
 type LotStatus = "Available" | "Reserved" | "Sold";
 
@@ -110,7 +110,7 @@ export default function FeaturedLotsPinned() {
             }}
             className="relative flex h-screen w-full snap-start items-end overflow-hidden"
           >
-            <img
+            <img loading="lazy" decoding="async"
               src={lot.image}
               alt={`${lot.name} at Ledge Rock at Cricket Creek`}
               className="absolute inset-0 h-full w-full object-cover"
