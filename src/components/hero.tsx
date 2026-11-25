@@ -1,7 +1,6 @@
-import { useEffect, useRef } from "react";
 import { MotionConfig, motion } from "motion/react";
 import { ArrowRight, ChevronDown } from "lucide-react";
-import { useMediaQuery } from "../hooks/useMediaQuery";
+import heroImage from "../assets/hero-table-rock-lake-aerial.webp";
 
 const HEADLINE = "Find a Place You'll Be Proud to Call Home";
 const HEADLINE_WORDS = HEADLINE.split(" ");
@@ -11,46 +10,25 @@ const OPENING_BEAT = 0.8;
 const WORD_STAGGER = 0.09;
 const HEADLINE_DURATION = OPENING_BEAT + HEADLINE_WORDS.length * WORD_STAGGER + 0.7;
 
-const VIDEO = {
-  desktop: "/videos/ledge-hero-desktop.mp4",
-  mobile: "/videos/ledge-hero-mobile.mp4",
-};
-
 export default function Hero() {
-  const videoRef = useRef<HTMLVideoElement>(null);
-
-  const isDesktop = useMediaQuery("(min-width: 1024px)");
-  const prefersReducedMotion = useMediaQuery("(prefers-reduced-motion: reduce)");
-  const src = isDesktop ? VIDEO.desktop : VIDEO.mobile;
-
-  useEffect(() => {
-    const video = videoRef.current;
-    if (!video) return;
-    video.muted = true;
-    if (prefersReducedMotion) {
-      video.pause();
-    } else {
-      video.play().catch(() => {});
-    }
-  }, [src, prefersReducedMotion]);
 
   return (
     <MotionConfig reducedMotion="user">
       <section className="relative h-svh bg-neutral">
         <div className="relative h-full overflow-hidden">
           {/* ── MEDIA ── */}
-          <video
-            key={src}
-            ref={videoRef}
-            src={src}
-            muted
-            playsInline
-            preload={prefersReducedMotion ? "metadata" : "auto"}
-            autoPlay={!prefersReducedMotion}
-            loop
-            aria-hidden="true"
-            tabIndex={-1}
-            className="absolute inset-0 h-full w-full object-cover"
+          {/* Decorative background: the headline carries the meaning. Loaded eagerly as the page's largest image. */}
+          <motion.img
+            src={heroImage}
+            alt=""
+            width={1800}
+            height={1347}
+            decoding="async"
+            fetchPriority="high"
+            initial={{ scale: 1.06 }}
+            animate={{ scale: 1 }}
+            transition={{ duration: 2.4, ease: CINEMATIC_EASE }}
+            className="absolute inset-0 h-full w-full object-cover object-[center_45%]"
           />
 
           {/* ── OVERLAYS ── */}
@@ -68,7 +46,7 @@ export default function Hero() {
             className="pointer-events-none absolute inset-0 bg-gradient-to-r from-black/30 via-transparent to-transparent"
           />
 
-          {/* ── HERO TEXT (bottom-left, keeps the centre of the video clear) ── */}
+          {/* ── HERO TEXT (bottom-left, keeps the lake view in the centre clear) ── */}
           <div className="absolute bottom-12 left-6 right-6 z-10 max-w-xl text-left text-white sm:left-10 lg:bottom-16 lg:left-16">
             {/* Headline — word-by-word reveal */}
             <h1

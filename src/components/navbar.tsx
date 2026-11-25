@@ -3,6 +3,7 @@ import { useLocation } from "react-router-dom";
 import { AnimatePresence, motion } from "motion/react";
 import { ArrowUpRight, Mail, MapPin, Menu, Phone, X } from "lucide-react";
 import logo from "../assets/logo.webp";
+import logoReverse from "../assets/logo-reverse.webp";
 import { useLenis } from "../lib/lenis";
 
 const EASE = [0.16, 1, 0.3, 1] as const;
@@ -71,10 +72,13 @@ export default function Navbar({ transparent = false }: NavbarProps) {
       >
         {/* Logo */}
         <a href="/" className="flex items-center gap-2">
+          {/* White reversed logo over photos; the dark one on the cream header. */}
           <img
-            src={logo}
+            src={isOverlay ? logoReverse : logo}
             alt="Ledge Rock at Cricket Creek"
-            className="h-16 w-auto"
+            className={`h-16 w-auto transition-[filter] duration-300 ${
+              isOverlay ? "drop-shadow-[0_2px_6px_rgba(0,0,0,0.55)]" : ""
+            }`}
           />
         </a>
 

@@ -142,22 +142,14 @@ export default function AdminLogin() {
           </div>
         </div>
 
-        <div className="flex items-center justify-between">
-          <label className="flex cursor-pointer items-center gap-2 font-body text-sm text-neutral-700/80">
-            <input
-              type="checkbox"
-              name="remember"
-              className="h-4 w-4 rounded-full border-neutral-700/30 accent-primary"
-            />
-            Remember me
-          </label>
-          <a
-            href="mailto:danb@lakeshorepropgrp.com?subject=Admin%20password%20reset"
-            className="rounded-sm font-body text-sm text-primary underline-offset-4 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
-          >
-            Forgot password?
-          </a>
-        </div>
+        <label className="flex w-fit cursor-pointer items-center gap-2 font-body text-sm text-neutral-700/80">
+          <input
+            type="checkbox"
+            name="remember"
+            className="h-4 w-4 rounded-full border-neutral-700/30 accent-primary"
+          />
+          Remember me
+        </label>
 
         {error && (
           <p
@@ -177,16 +169,6 @@ export default function AdminLogin() {
           {isSubmitting ? "Signing in…" : "Sign In"}
         </button>
       </form>
-
-      <p className="mt-10 text-center font-body text-xs text-neutral-700/70">
-        Need assistance?{" "}
-        <a
-          href="mailto:danb@lakeshorepropgrp.com?subject=Admin%20portal%20support"
-          className="text-primary underline-offset-4 hover:underline"
-        >
-          Contact IT Support
-        </a>
-      </p>
     </AdminAuthLayout>
   );
 }
