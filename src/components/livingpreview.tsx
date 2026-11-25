@@ -1,192 +1,226 @@
 import { useRef } from "react";
-import { motion, useScroll, useTransform, useSpring, useReducedMotion, type MotionValue } from "motion/react";
+import { motion, useReducedMotion, useScroll, useTransform, type MotionValue } from "motion/react";
 import { Link } from "react-router-dom";
-import { ArrowRight, ArrowDown } from "lucide-react";
-import kayakImage1 from '../assets/waterliving.webp'
-import dockImage1 from '../assets/nightliving.webp'
-import communityImage1 from '../assets/community.webp'
+import { ArrowRight } from "lucide-react";
+import kayakImage from "../assets/waterliving.webp";
+import dockImage from "../assets/nightliving.webp";
+import communityImage from "../assets/community.webp";
 
-// PLACEHOLDER images — standing in until more real Ledge Rock photography arrives.
-const kayakImage =
-  kayakImage1;
-const dockImage =
-  dockImage1;
-const communityImage =
-  communityImage1;
-
+// PLACEHOLDER images: standing in until more real Ledge Rock photography arrives.
 const PANELS = [
   {
     label: "The Water",
     copy: "Quiet mornings, paddle in hand.",
+    detail: "Clear Ozark water at the edge of the community, made for slow paddles and early swims.",
     image: kayakImage,
+    alt: "Looking out over a calm lake from the front of a kayak",
   },
   {
     label: "The Quiet",
     copy: "Evenings that ask nothing of you.",
+    detail: "Wide skies, long sunsets and nothing on the schedule but the view from your own porch.",
     image: dockImage,
+    alt: "A couple sitting on a lakeside dock at sunset",
   },
   {
     label: "The Community",
     copy: "Neighbors who feel like family.",
+    detail: "A gated enclave of fourteen homesites, close enough to know the people next door.",
     image: communityImage,
+    alt: "Friends gathered around a lakeside campfire at night",
   },
 ];
 
-// One progress dot; its own component so the motion hooks aren't called inside a loop.
-function ProgressDot({ index, progress }: { index: number; progress: MotionValue<number> }) {
-  const start = Math.max(0, index / PANELS.length - 0.05);
-  const end = Math.min(1, index / PANELS.length + 0.05);
-  const opacity = useTransform(progress, [start, end], [0.2, 1]);
-  const scale = useTransform(progress, [start, end], [0.8, 1.2]);
+const EASE = [0.16, 1, 0.3, 1] as const;
+const pad = (n: number) => String(n).padStart(2, "0");
+
+export default function LivingPreview() {
+  const reduceMotion = useReducedMotion();
+  return reduceMotion ? <StaticLiving /> : <StackedLiving />;
+}
+
+/* ------------------------------------------------------------------ */
+/* Stacked cards: each panel slides over the last, which recedes       */
+/* ------------------------------------------------------------------ */
+
+function StackedLiving() {
+  const stackRef = useRef<HTMLDivElement>(null);
+  // 0 when the first card pins, 1 when the last card has settled on top.
+  const { scrollYProgress } = useScroll({ target: stackRef, offset: ["start start", "end end"] });
+
   return (
-    <motion.span
-      style={{ opacity, scale }}
-      className="h-1.5 w-1.5 rounded-full bg-white shadow-sm"
-    />
+    <section aria-labelledby="living-heading" className="bg-[#FAF7F1] pt-24 sm:pt-32 lg:pt-40">
+      <Intro />
+
+      <div ref={stackRef} className="relative mt-14 px-4 sm:mt-20 sm:px-6 lg:px-10">
+        {PANELS.map((panel, index) => (
+          <StackCard key={panel.label} panel={panel} index={index} progress={scrollYProgress} />
+        ))}
+      </div>
+
+      <Outro />
+    </section>
   );
 }
 
-export default function LivingPreview() {
-  const wrapperRef = useRef<HTMLDivElement>(null);
-  const prefersReducedMotion = useReducedMotion();
+function Intro() {
+  return (
+    <div className="mx-auto grid max-w-7xl gap-8 px-6 lg:grid-cols-[1.3fr_1fr] lg:items-end lg:gap-16 lg:px-10">
+      <div>
+        <motion.p
+          initial={{ opacity: 0, y: 16 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true, amount: 0.8 }}
+          transition={{ duration: 0.8, ease: EASE }}
+          className="font-body text-xs font-semibold uppercase tracking-[0.25em] text-primary"
+        >
+          Table Rock Living
+        </motion.p>
+        <motion.h2
+          id="living-heading"
+          initial={{ opacity: 0, y: 32 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true, amount: 0.6 }}
+          transition={{ duration: 1, ease: EASE, delay: 0.08 }}
+          className="mt-4 font-headline text-4xl font-semibold leading-[1.05] text-neutral-700 sm:text-5xl xl:text-6xl"
+        >
+          There&apos;s more to home
+          <br className="hidden sm:block" /> than <span className="italic text-primary">the house.</span>
+        </motion.h2>
+      </div>
+      <motion.div
+        initial={{ opacity: 0, y: 24 }}
+        whileInView={{ opacity: 1, y: 0 }}
+        viewport={{ once: true, amount: 0.6 }}
+        transition={{ duration: 1, ease: EASE, delay: 0.2 }}
+        className="lg:pb-2"
+      >
+        <div className="mb-5 h-0.5 w-16 bg-tertiary" />
+        <p className="max-w-md font-body text-base leading-relaxed text-neutral-700/75">
+          Life at Ledge Rock is measured in mornings on the water, unhurried evenings and the people you share them
+          with. Here&apos;s what waits beyond the front door.
+        </p>
+      </motion.div>
+    </div>
+  );
+}
 
-  const { scrollYProgress } = useScroll({
-    target: wrapperRef,
-    offset: ["start start", "end end"],
-  });
+function StackCard({
+  panel,
+  index,
+  progress,
+}: {
+  panel: (typeof PANELS)[number];
+  index: number;
+  progress: MotionValue<number>;
+}) {
+  const cardRef = useRef<HTMLDivElement>(null);
+  const total = PANELS.length;
 
-  // 1. Add Spring Physics: This removes the harsh 1:1 scroll mapping and gives 
-  // the panning track a buttery, cinematic momentum that settles naturally.
-  const smoothProgress = useSpring(scrollYProgress, {
-    damping: 24,
-    stiffness: 100,
-    mass: 0.5,
-  });
+  // Once the stack starts moving past this card, it shrinks and dims as later cards cover it.
+  const start = index / total;
+  const depth = total - 1 - index; // how many cards will end up on top of this one
+  const scale = useTransform(progress, [start, 1], [1, 1 - depth * 0.05]);
+  const dim = useTransform(progress, [start, 1], [0, depth * 0.22]);
 
-  // Track panning calculation
-  const trackShift = `-${((PANELS.length - 1) / PANELS.length) * 100}%`;
-  const x = useTransform(smoothProgress, [0, 1], ["0%", trackShift]);
-
-  // 2. Parallax & Scale: As the track pans left, we subtly shift the images right 
-  // and scale them up. This creates a deep "window" effect rather than a flat slider.
-  const imgX = useTransform(smoothProgress, [0, 1], ["0%", "15%"]);
-  const imgScale = useTransform(smoothProgress, [0, 1], [1, 1.15]);
-
-  const hintOpacity = useTransform(smoothProgress, [0, 0.05], [1, 0]);
-  
-  // Staggered CTA entrance
-  const ctaOpacity = useTransform(smoothProgress, [0.85, 0.95], [0, 1]);
-  const ctaY = useTransform(smoothProgress, [0.85, 0.95], [20, 0]);
-
-  if (prefersReducedMotion) {
-    return (
-      <section className="bg-neutral px-6 py-20 lg:px-8">
-        <div className="mx-auto max-w-2xl text-center">
-          <h2 className="font-headline text-3xl font-semibold text-white sm:text-4xl">
-            There&apos;s More to Home Than the House
-          </h2>
-        </div>
-        <div className="mx-auto mt-12 grid max-w-5xl grid-cols-1 gap-6 sm:grid-cols-3">
-          {PANELS.map((panel) => (
-            <div key={panel.label} className="overflow-hidden rounded-2xl">
-              <img loading="lazy" decoding="async" src={panel.image} alt={panel.label} className="h-64 w-full object-cover" />
-              <div className="bg-white/5 p-5">
-                <p className="font-body text-sm font-medium text-white">{panel.label}</p>
-                <p className="mt-1 font-body text-sm text-white/70">{panel.copy}</p>
-              </div>
-            </div>
-          ))}
-        </div>
-        <div className="mt-10 text-center">
-          <Link
-            to="/table-rock-living"
-            className="inline-flex items-center gap-2 rounded-full bg-primary px-6 py-3 font-body text-[15px] font-medium text-white hover:bg-primary-dark"
-          >
-            Explore Table Rock Living
-            <ArrowRight className="h-4 w-4" />
-          </Link>
-        </div>
-      </section>
-    );
-  }
+  // As the card arrives, its photo zooms out from a close crop and the copy rises in.
+  const { scrollYProgress: arrival } = useScroll({ target: cardRef, offset: ["start end", "start start"] });
+  const imageScale = useTransform(arrival, [0, 1], [1.3, 1]);
+  const copyY = useTransform(arrival, [0.45, 1], [60, 0]);
+  const copyOpacity = useTransform(arrival, [0.45, 0.9], [0, 1]);
 
   return (
-    <div ref={wrapperRef} className="relative h-[300vh]">
-      <div className="sticky top-0 h-screen overflow-hidden bg-black">
-        
-        {/* Fixed heading with a subtle text shadow for legibility over images */}
-        <div className="pointer-events-none absolute inset-x-0 top-0 z-30 pt-14 text-center">
-          <h2 className="font-headline text-3xl font-semibold text-white drop-shadow-md sm:text-4xl">
-            There&apos;s More to Home Than the House
-          </h2>
-        </div>
+    <div
+      ref={cardRef}
+      className="sticky h-[calc(100svh-8rem)] min-h-[460px] pb-6"
+      style={{ top: `calc(6.5rem + ${index * 1.75}rem)` }}
+    >
+      <motion.article
+        style={{ scale }}
+        className="relative mx-auto h-full max-w-7xl origin-top overflow-hidden rounded-[32px] bg-neutral-700 shadow-[0_-20px_60px_-30px_rgba(40,45,40,0.6)]"
+      >
+        <motion.img
+          src={panel.image}
+          alt={panel.alt}
+          loading="lazy"
+          decoding="async"
+          style={{ scale: imageScale }}
+          className="absolute inset-0 h-full w-full object-cover"
+        />
+        <div aria-hidden="true" className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/15 to-black/10" />
+        <div aria-hidden="true" className="absolute inset-0 bg-gradient-to-r from-black/45 via-transparent to-transparent" />
+        <div aria-hidden="true" className="absolute inset-x-0 top-0 h-32 bg-gradient-to-b from-black/45 to-transparent" />
+        {/* Darkens as later cards stack on top, so the stack reads as layers */}
+        <motion.div aria-hidden="true" style={{ opacity: dim }} className="absolute inset-0 bg-black" />
 
-        {/* Smoothed Progress dots */}
-        <div className="pointer-events-none absolute inset-x-0 top-28 z-30 flex items-center justify-center gap-2.5 sm:top-32">
-          {PANELS.map((panel, i) => (
-            <ProgressDot key={panel.label} index={i} progress={smoothProgress} />
-          ))}
-        </div>
-
-        {/* Horizontal-panning track */}
-        <motion.div
-          style={{ x, width: `${PANELS.length * 100}vw` }}
-          className="flex h-full will-change-transform"
-        >
-          {PANELS.map((panel) => (
-            <div key={panel.label} className="relative h-full w-screen shrink-0 overflow-hidden">
-              
-              {/* Parallax & Scaling Image */}
-              <motion.img
-                style={{ x: imgX, scale: imgScale }}
-                src={panel.image}
-                alt={panel.label}
-                className="absolute inset-0 h-full w-full object-cover origin-center will-change-transform"
-              />
-              
-              {/* 3. Cinematic Gradients: Instead of a flat black overlay, 
-                  combining a radial vignette with a strong bottom gradient 
-                  makes the center pop while keeping text readable. */}
-              <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,transparent_0%,rgba(0,0,0,0.3)_100%)] mix-blend-multiply" />
-              <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/20 to-transparent" />
-
-              <div className="absolute inset-x-0 bottom-0 px-6 pb-24 text-center sm:pb-32 z-20">
-                <p className="font-body text-sm font-semibold uppercase tracking-[0.2em] text-white/80">
-                  {panel.label}
-                </p>
-                <p className="mt-4 font-body text-2xl font-light text-white sm:text-3xl tracking-wide">
-                  {panel.copy}
-                </p>
-              </div>
-            </div>
-          ))}
-        </motion.div>
-
-        {/* Scroll hint */}
-        <motion.div
-          style={{ opacity: hintOpacity }}
-          className="pointer-events-none absolute inset-x-0 bottom-8 z-30 flex items-center justify-center gap-2 text-white/70"
-        >
-          <span className="font-body text-xs uppercase tracking-[0.15em]">
-            Scroll to explore
+        {/* Index + label along the top */}
+        <div className="absolute inset-x-0 top-0 flex items-center justify-between p-6 text-white sm:p-8 lg:p-10">
+          <span className="font-body text-xs font-semibold uppercase tracking-[0.25em] text-white/85">
+            {panel.label}
           </span>
-          <ArrowDown className="h-4 w-4 animate-bounce" />
-        </motion.div>
+          <span className="font-body text-xs font-semibold tabular-nums tracking-[0.2em] text-white/70">
+            {pad(index + 1)} <span className="text-white/40">/ {pad(total)}</span>
+          </span>
+        </div>
 
-        {/* CTA */}
         <motion.div
-          style={{ opacity: ctaOpacity, y: ctaY }}
-          className="absolute inset-x-0 bottom-10 z-30 flex justify-center sm:bottom-12 pointer-events-auto"
+          style={{ y: copyY, opacity: copyOpacity }}
+          className="absolute inset-x-0 bottom-0 grid gap-5 p-6 text-white sm:p-8 lg:grid-cols-[1.4fr_1fr] lg:items-end lg:gap-12 lg:p-12"
         >
-          <Link
-            to="/tablerockliving"
-           className="inline-flex items-center gap-2 rounded-full bg-primary px-7 py-3 font-body text-[15px] font-medium text-white transition-colors hover:bg-primary-dark focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:ring-offset-black/40"
-          >
-            <span>Explore Table Rock Living</span>
-            <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
-          </Link>
+          <h3 className="font-headline text-3xl font-semibold leading-[1.1] sm:text-5xl lg:text-6xl">{panel.copy}</h3>
+          <p className="max-w-sm font-body text-[15px] leading-relaxed text-white/80 lg:justify-self-end">
+            {panel.detail}
+          </p>
         </motion.div>
-      </div>
+      </motion.article>
     </div>
+  );
+}
+
+function Outro() {
+  return (
+    <div className="mx-auto flex max-w-7xl flex-col items-start justify-between gap-6 px-6 pb-24 pt-10 sm:flex-row sm:items-center sm:pb-32 lg:px-10">
+      <p className="max-w-lg font-headline text-2xl font-semibold leading-snug text-neutral-700 sm:text-3xl">
+        See the lake, the trails and the towns that make up life here.
+      </p>
+      <Link
+        to="/tablerockliving"
+        className="group inline-flex shrink-0 items-center gap-2 rounded-full bg-primary px-7 py-3.5 font-body text-[15px] font-medium text-white shadow-lg shadow-primary/20 transition-colors hover:bg-primary-dark focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
+      >
+        Explore Table Rock Living
+        <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" aria-hidden="true" />
+      </Link>
+    </div>
+  );
+}
+
+/* ------------------------------------------------------------------ */
+/* Reduced motion: same content, no scroll effects                     */
+/* ------------------------------------------------------------------ */
+
+function StaticLiving() {
+  return (
+    <section aria-labelledby="living-heading" className="bg-[#FAF7F1] pt-24 sm:pt-32">
+      <div className="mx-auto max-w-7xl px-6 lg:px-10">
+        <p className="font-body text-xs font-semibold uppercase tracking-[0.25em] text-primary">Table Rock Living</p>
+        <h2 id="living-heading" className="mt-4 font-headline text-4xl font-semibold text-neutral-700 sm:text-5xl">
+          There&apos;s more to home than <span className="italic text-primary">the house.</span>
+        </h2>
+        <div className="mt-12 grid grid-cols-1 gap-6 md:grid-cols-3">
+          {PANELS.map((panel) => (
+            <article key={panel.label} className="relative h-[60vh] min-h-[380px] overflow-hidden rounded-[28px]">
+              <img src={panel.image} alt={panel.alt} loading="lazy" className="absolute inset-0 h-full w-full object-cover" />
+              <div aria-hidden="true" className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/15 to-transparent" />
+              <div className="absolute inset-x-0 bottom-0 p-6 text-white">
+                <p className="font-body text-xs font-semibold uppercase tracking-[0.25em] text-white/80">{panel.label}</p>
+                <h3 className="mt-2 font-headline text-2xl font-semibold">{panel.copy}</h3>
+                <p className="mt-2 font-body text-sm text-white/75">{panel.detail}</p>
+              </div>
+            </article>
+          ))}
+        </div>
+      </div>
+      <Outro />
+    </section>
   );
 }
