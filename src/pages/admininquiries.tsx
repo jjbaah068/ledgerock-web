@@ -10,16 +10,17 @@ import {
   Trash2,
 } from "lucide-react";
 import {
-  ADMIN_INQUIRIES,
   deleteAdminInquiry,
+  listAdminInquiries,
   updateAdminInquiry,
   type AdminInquiry,
   type InquiryStatus,
 } from "@/data/admindashboard";
-import { useAdminDataVersion } from "@/hooks/use-admin-data";
+import { useAdminResource } from "@/hooks/use-admin-data";
+import { AdminError, AdminLoading } from "@/components/adminstatus";
 import { firstName } from "@/lib/adminsession";
+import { useConfirm, useToast } from "@/lib/feedback";
 import { getLotById } from "@/data/lots";
-import AdminTopNav from "@/components/admintopnav";
 
 type Filter = "All" | InquiryStatus;
 const FILTERS: Filter[] = ["All", "New", "Contacted", "Closed"];
@@ -49,14 +50,15 @@ const timeOfDay = new Intl.DateTimeFormat("en-US", {
 const cardShadow = "shadow-[0_6px_20px_-12px_rgba(74,78,74,0.35)]";
 
 export default function AdminInquiries() {
-  useAdminDataVersion(); // re-render when an inquiry changes
+  const { data, error, loading } = useAdminResource(listAdminInquiries);
   const [searchParams, setSearchParams] = useSearchParams();
   const [filter, setFilter] = useState<Filter>("All");
   const [query, setQuery] = useState("");
+  const [busy, setBusy] = useState(false);
+  const toast = useToast();
+  const confirm = useConfirm();
 
-  const inquiries = [...ADMIN_INQUIRIES].sort((a, b) =>
-    b.receivedAt.localeCompare(a.receivedAt),
-  );
+  const inquiries = data ?? [];
 
   const q = query.trim().toLowerCase();
   const visible = inquiries
@@ -78,19 +80,57 @@ export default function AdminInquiries() {
     setSearchParams(id ? { id } : {}, { replace: true });
   }
 
-  function remove(inquiry: AdminInquiry) {
-    if (!window.confirm(`Delete the inquiry from ${inquiry.name}? This can't be undone.`)) return;
+  async function changeStatus(inquiry: AdminInquiry, status: InquiryStatus) {
+    if (status === inquiry.status) return;
+    setBusy(true);
+    try {
+      await updateAdminInquiry(inquiry.id, status);
+      toast.success({
+        source: "Inquiries · Status",
+        title: `Marked as ${status}`,
+        description: `Inquiry from ${inquiry.name} moved from ${inquiry.status} to ${status}.`,
+        duration: 3500,
+      });
+    } catch (err) {
+      toast.fromError(err, { source: "Inquiries · Status", title: `Couldn't update the inquiry from ${inquiry.name}` });
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function remove(inquiry: AdminInquiry) {
     const index = visible.findIndex((i) => i.id === inquiry.id);
     const next = visible[index + 1] ?? visible[index - 1] ?? null;
-    deleteAdminInquiry(inquiry.id);
-    select(next?.id ?? null);
+    setBusy(true);
+    try {
+      const confirmed = await confirm({
+        tone: "danger",
+        title: "Delete this inquiry?",
+        description: "The message and the sender's contact details will be permanently removed. This can't be undone.",
+        subject: {
+          label: `${inquiry.name} · ${inquiry.email}`,
+          detail: `Received ${shortDate.format(new Date(inquiry.receivedAt))}${inquiry.property ? ` · ${inquiry.property.title}` : inquiry.topic ? ` · ${inquiry.topic}` : ""}`,
+        },
+        confirmLabel: "Delete inquiry",
+        busyLabel: "Deleting…",
+        action: () => deleteAdminInquiry(inquiry.id),
+      });
+      if (confirmed) {
+        select(next?.id ?? null);
+        toast.success({ source: "Inquiries · Delete", title: "Inquiry deleted", description: `The message from ${inquiry.name} was removed.` });
+      }
+    } catch (err) {
+      toast.fromError(err, { source: "Inquiries · Delete", title: `Couldn't delete the inquiry from ${inquiry.name}` });
+    } finally {
+      setBusy(false);
+    }
   }
 
   return (
     <>
-    <AdminTopNav />
     <div className="mx-auto w-full max-w-6xl px-4 py-8 sm:px-8 lg:py-10">
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,380px)]">
+      {error && <AdminError message={error} retry />}
+      <div className={`grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,380px)] ${error ? "mt-6" : ""}`}>
         {/* List */}
         <section
           aria-label="Inquiries"
@@ -142,7 +182,9 @@ export default function AdminInquiries() {
             })}
           </div>
 
-          {visible.length === 0 ? (
+          {loading ? (
+            <AdminLoading label="Loading inquiries..." />
+          ) : !data ? null : visible.length === 0 ? (
             <div className="flex flex-col items-center px-6 py-16 text-center">
               <span className="flex h-12 w-12 items-center justify-center rounded-full bg-primary/10">
                 <Inbox className="h-5 w-5 text-primary" aria-hidden="true" />
@@ -217,6 +259,8 @@ export default function AdminInquiries() {
             <InquiryDetail
               key={selected.id}
               inquiry={selected}
+              busy={busy}
+              onStatusChange={(status) => changeStatus(selected, status)}
               onBack={() => select(null)}
               onDelete={() => remove(selected)}
             />
@@ -242,10 +286,14 @@ export default function AdminInquiries() {
 
 function InquiryDetail({
   inquiry,
+  busy,
+  onStatusChange: setStatus,
   onBack,
   onDelete,
 }: {
   inquiry: AdminInquiry;
+  busy: boolean;
+  onStatusChange: (status: InquiryStatus) => void;
   onBack: () => void;
   onDelete: () => void;
 }) {
@@ -259,10 +307,6 @@ function InquiryDetail({
   const mailto = `mailto:${inquiry.email}?subject=${encodeURIComponent(subject)}`;
   const iconButton =
     "flex h-8 w-8 items-center justify-center rounded-full text-neutral-700/70 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary";
-
-  function setStatus(status: InquiryStatus) {
-    updateAdminInquiry(inquiry.id, { status });
-  }
 
   return (
     <>
@@ -280,7 +324,7 @@ function InquiryDetail({
           <button
             type="button"
             onClick={() => setStatus("New")}
-            disabled={inquiry.status === "New"}
+            disabled={busy || inquiry.status === "New"}
             aria-label="Mark as new"
             title="Mark as new"
             className={`${iconButton} hover:bg-[#F5F1EA] hover:text-primary disabled:opacity-40 disabled:hover:bg-transparent`}
@@ -290,6 +334,7 @@ function InquiryDetail({
           <button
             type="button"
             onClick={onDelete}
+            disabled={busy}
             aria-label={`Delete inquiry from ${inquiry.name}`}
             title="Delete"
             className={`${iconButton} text-red-500 hover:bg-red-50 hover:text-red-700`}
@@ -309,6 +354,7 @@ function InquiryDetail({
             <span className="sr-only">Status</span>
             <select
               value={inquiry.status}
+              disabled={busy}
               onChange={(e) => setStatus(e.target.value as InquiryStatus)}
               className={`cursor-pointer appearance-none rounded-full border-0 px-3 py-1 text-center font-body text-[11px] font-semibold focus:outline-none focus-visible:ring-2 focus-visible:ring-primary ${STATUS_BADGE[inquiry.status]}`}
             >

@@ -1,10 +1,11 @@
 import { useState, useMemo } from "react";
 import { Link } from "react-router-dom";
 import { motion, AnimatePresence, type Variants } from "motion/react";
-import { MapPin, Ruler, Waves, Search, ArrowRight, X } from "lucide-react";
+import { MapPin, Search, ArrowRight, X } from "lucide-react";
 import Navbar from "../components/navbar";
 import Footer from "../components/footer";
-import { LOTS, STATUS_STYLES, type LotStatus } from "../data/lots";
+import { STATUS_STYLES, type LotStatus } from "../data/lots";
+import { usePublicListings } from "../hooks/use-public-listings";
 
 const STATUS_FILTERS: Array<LotStatus | "All"> = [
   "All",
@@ -41,6 +42,7 @@ const cardItem: Variants = {
 };
 
 export default function Properties() {
+  const { listings, failed } = usePublicListings();
   const [statusFilter, setStatusFilter] =
     useState<(typeof STATUS_FILTERS)[number]>("All");
   const [viewTypeFilter, setViewTypeFilter] =
@@ -48,7 +50,7 @@ export default function Properties() {
   const [searchQuery, setSearchQuery] = useState("");
 
   const filteredLots = useMemo(() => {
-    return LOTS.filter((lot) => {
+    return listings.filter((lot) => {
       const matchesStatus = statusFilter === "All" || lot.status === statusFilter;
       const matchesViewType =
         viewTypeFilter === "All" || lot.viewType === viewTypeFilter;
@@ -57,7 +59,7 @@ export default function Properties() {
         lot.name.toLowerCase().includes(searchQuery.trim().toLowerCase());
       return matchesStatus && matchesViewType && matchesSearch;
     });
-  }, [statusFilter, viewTypeFilter, searchQuery]);
+  }, [listings, statusFilter, viewTypeFilter, searchQuery]);
 
   const hasActiveFilters =
     statusFilter !== "All" || viewTypeFilter !== "All" || searchQuery !== "";
@@ -151,7 +153,7 @@ export default function Properties() {
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Search by lot name..."
+              placeholder="Search by name..."
               className="rounded-full border border-neutral-200 bg-white px-5 py-2.5 font-body text-sm text-neutral-700 placeholder:text-neutral-700/40 focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
             />
             <button
@@ -165,8 +167,13 @@ export default function Properties() {
         </div>
 
         <p className="mx-auto mt-4 max-w-6xl font-body text-sm text-neutral-700/60">
-          Showing {filteredLots.length} of {LOTS.length} lots
+          Showing {filteredLots.length} of {listings.length} properties
         </p>
+        {failed && (
+          <p role="status" className="mx-auto mt-2 max-w-6xl font-body text-sm text-neutral-700/60">
+            Our newest listings could not be loaded right now. Please check back shortly.
+          </p>
+        )}
       </motion.section>
 
       {/* Lot grid - Refactored for Premium Layout */}
@@ -216,7 +223,7 @@ export default function Properties() {
                     </span>
                     {lot.isPlaceholderImage && (
                       <span className="absolute bottom-4 left-4 rounded-full bg-black/60 px-4 py-1.5 font-body text-xs text-white backdrop-blur-md">
-                        Example home &mdash; lot photography coming soon
+                        Example home &mdash; photography coming soon
                       </span>
                     )}
                   </div>
@@ -224,8 +231,8 @@ export default function Properties() {
                   {/* Refined Content Side */}
                   <div className="flex w-full flex-col md:w-2/5">
                     <div className="mb-4 flex items-center gap-2 font-body text-xs font-semibold uppercase tracking-widest text-neutral-400">
-                      <MapPin className="h-4 w-4" />
-                      Ledge Rock at Cricket Creek
+                      <MapPin className="h-4 w-4 shrink-0" />
+                      {lot.lotId ? "Ledge Rock at Cricket Creek" : lot.location}
                     </div>
 
                     <h2 className="font-headline text-3xl font-semibold text-neutral-800 lg:text-4xl">
@@ -233,28 +240,22 @@ export default function Properties() {
                     </h2>
 
                     <p className="mt-3 font-body text-xl font-medium text-primary">
-                      {lot.price} <span className="font-normal text-neutral-400">&mdash; {lot.viewType}</span>
+                      {lot.price}{" "}
+                      {lot.viewType && <span className="font-normal text-neutral-400">&mdash; {lot.viewType}</span>}
                     </p>
 
                     <div className="my-8 grid grid-cols-2 gap-8 border-y border-neutral-100 py-6">
-                      <div>
-                        <p className="mb-1 font-body text-[11px] font-semibold uppercase tracking-widest text-neutral-400">
-                          Acreage
-                        </p>
-                        <p className="flex items-center gap-2 font-body text-neutral-700">
-                          <Ruler className="h-4 w-4 text-primary" />
-                          {lot.acreage}
-                        </p>
-                      </div>
-                      <div>
-                        <p className="mb-1 font-body text-[11px] font-semibold uppercase tracking-widest text-neutral-400">
-                          Shoreline
-                        </p>
-                        <p className="flex items-center gap-2 font-body text-neutral-700">
-                          <Waves className="h-4 w-4 text-primary" />
-                          {lot.shoreline}
-                        </p>
-                      </div>
+                      {lot.specs.slice(0, 2).map(({ label, value, icon: Icon }) => (
+                        <div key={label}>
+                          <p className="mb-1 font-body text-[11px] font-semibold uppercase tracking-widest text-neutral-400">
+                            {label}
+                          </p>
+                          <p className="flex items-center gap-2 font-body text-neutral-700">
+                            <Icon className="h-4 w-4 shrink-0 text-primary" />
+                            {value}
+                          </p>
+                        </div>
+                      ))}
                     </div>
 
                     {/* Bespoke Call to Action */}

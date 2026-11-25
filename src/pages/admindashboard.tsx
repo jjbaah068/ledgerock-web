@@ -13,13 +13,9 @@ import {
 import { useAdmin } from "@/components/adminlayout";
 import { firstName } from "@/lib/adminsession";
 import logo from "@/assets/logo.webp";
-import { useAdminDataVersion } from "@/hooks/use-admin-data";
-import {
-  getDashboardStats,
-  getRecentInquiries,
-  getRecentProperties,
-  type AdminPropertyStatus,
-} from "@/data/admindashboard";
+import { useAdminResource } from "@/hooks/use-admin-data";
+import { formatUsd, getDashboard, type AdminPropertyStatus } from "@/data/admindashboard";
+import { AdminError, AdminLoading } from "@/components/adminstatus";
 
 const STATUS_STYLES: Record<AdminPropertyStatus, string> = {
   Published: "bg-primary/15 text-primary-dark",
@@ -27,30 +23,24 @@ const STATUS_STYLES: Record<AdminPropertyStatus, string> = {
   Sold: "bg-tertiary/20 text-[#8A6F38]",
 };
 
-const priceFormatter = new Intl.NumberFormat("en-US", {
-  style: "currency",
-  currency: "USD",
-  maximumFractionDigits: 0,
-});
-
 export default function AdminDashboard() {
   const admin = useAdmin();
-  useAdminDataVersion(); // re-render when properties or inquiries change
-  const stats = getDashboardStats();
-  const recentProperties = getRecentProperties();
-  const recentInquiries = getRecentInquiries();
+  const { data, error, loading } = useAdminResource(getDashboard);
+  const stats = data?.stats;
+  const recentProperties = data?.recentProperties ?? [];
+  const recentInquiries = data?.recentInquiries ?? [];
 
   const statCards: {
     label: string;
-    value: number;
+    value: number | string;
     icon: ComponentType<{ className?: string }>;
     highlight?: boolean;
   }[] = [
-    { label: "Total", value: stats.total, icon: Home },
-    { label: "Published", value: stats.published, icon: Globe },
-    { label: "Drafts", value: stats.drafts, icon: FileText },
-    { label: "Sold (YTD)", value: stats.soldYtd, icon: CircleCheck },
-    { label: "New Inquiries", value: stats.newInquiries, icon: MailOpen, highlight: true },
+    { label: "Total", value: stats?.total ?? "-", icon: Home },
+    { label: "Published", value: stats?.published ?? "-", icon: Globe },
+    { label: "Drafts", value: stats?.drafts ?? "-", icon: FileText },
+    { label: "Sold (YTD)", value: stats?.soldYtd ?? "-", icon: CircleCheck },
+    { label: "New Inquiries", value: stats?.newInquiries ?? "-", icon: MailOpen, highlight: true },
   ];
 
   return (
@@ -79,6 +69,8 @@ export default function AdminDashboard() {
           Add Property
         </Link>
       </div>
+
+      {error && <AdminError message={error} retry />}
 
       {/* Stats */}
       <section aria-label="Property and inquiry totals" className="mt-8">
@@ -133,7 +125,9 @@ export default function AdminDashboard() {
             </Link>
           </div>
 
-          {recentProperties.length === 0 ? (
+          {loading ? (
+            <AdminLoading />
+          ) : !data ? null : recentProperties.length === 0 ? (
             <EmptyState
               icon={Building2}
               title="No properties yet"
@@ -161,7 +155,7 @@ export default function AdminDashboard() {
                       {property.address}
                     </p>
                     <p className="mt-1 font-body text-sm font-semibold text-primary-dark">
-                      {priceFormatter.format(property.price)}
+                      {formatUsd(property.price)}
                     </p>
                   </div>
                   <span
@@ -183,7 +177,9 @@ export default function AdminDashboard() {
             </h2>
           </div>
 
-          {recentInquiries.length === 0 ? (
+          {loading ? (
+            <AdminLoading />
+          ) : !data ? null : recentInquiries.length === 0 ? (
             <EmptyState
               icon={Inbox}
               title="No inquiries yet"

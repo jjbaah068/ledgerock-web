@@ -14,7 +14,7 @@ import lot6Photo from "../assets/Lasater-28.webp";
 export type LotStatus = "Available" | "Reserved" | "Sold";
 
 export interface Lot {
-  gallery: any[];
+  gallery: string[];
   id: string;
   name: string;
   status: LotStatus;

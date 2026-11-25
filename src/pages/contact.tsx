@@ -5,7 +5,8 @@ import { Mail, Phone, MapPin, ArrowRight, Navigation } from "lucide-react";
 import Navbar from "../components/navbar";
 import Footer from "../components/footer";
 import { LOTS } from "../data/lots";
-import { addAdminInquiry } from "../data/admindashboard";
+import { submitInquiry } from "../data/admindashboard";
+import { errorFields, errorMessage } from "../lib/api";
 import handHouse from "../assets/img10.webp";
 
 const CINEMATIC_EASE = [0.16, 1, 0.3, 1] as const;
@@ -22,6 +23,7 @@ const INTEREST_OPTIONS = [
 export default function Contact() {
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
   const [searchParams] = useSearchParams();
   const lotParam = searchParams.get("lot");
 
@@ -29,35 +31,30 @@ export default function Contact() {
     event.preventDefault();
     const form = event.currentTarget;
     const formData = new FormData(form);
-
-    // Honeypot check — 
-    if (formData.get("company")) {
-      return;
-    }
-
-    setIsSubmitting(true);
-
-    // Send the message to the admin Inquiries inbox.
-    // TODO: post to a backend or form service so messages reach the admin
-    // from any visitor's device, not just this browser.
     const text = (key: string) => String(formData.get(key) ?? "").trim();
     const lot = lotParam
       ? LOTS.find((l) => l.id === lotParam || l.name === lotParam)
       : undefined;
-    addAdminInquiry({
-      name: text("name"),
-      email: text("email"),
-      phone: text("phone") || undefined,
-      message: text("message"),
-      topic: text("interest") || undefined,
-      property: lot
-        ? { title: lot.name, lotId: lot.id, href: `/properties/${lot.id}` }
-        : undefined,
-    });
 
-    setIsSubmitting(false);
-    setIsSubmitted(true);
-    form.reset();
+    setIsSubmitting(true);
+    setSubmitError(null);
+    try {
+      await submitInquiry({
+        name: text("name"),
+        email: text("email"),
+        phone: text("phone") || undefined,
+        message: text("message"),
+        topic: text("interest") || undefined,
+        lotId: lot?.id,
+        company: String(formData.get("company") ?? "") || undefined,
+      });
+      setIsSubmitted(true);
+      form.reset();
+    } catch (error) {
+      setSubmitError(Object.values(errorFields(error))[0] ?? errorMessage(error));
+    } finally {
+      setIsSubmitting(false);
+    }
   }
 
   return (
@@ -317,6 +314,12 @@ export default function Contact() {
                         className="mt-1.5 w-full rounded-lg border border-neutral-100 px-4 py-2.5 font-body text-[15px] text-neutral-700 placeholder:text-neutral-700/40 focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
                       />
                     </div>
+
+                    {submitError && (
+                      <p role="alert" className="rounded-lg bg-red-50 px-4 py-3 font-body text-sm text-red-700">
+                        {submitError}
+                      </p>
+                    )}
 
                     <button
                       type="submit"

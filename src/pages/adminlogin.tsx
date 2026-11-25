@@ -3,11 +3,12 @@ import { Eye, EyeOff, Lock, Mail, AlertCircle } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import AdminAuthLayout from "../components/adminauthlayout";
 import { signInAdmin } from "../lib/adminsession";
-import adminImage from "../assets/ldgeA1.jpg";
+import { ApiError, errorMessage } from "../lib/api";
+import adminImage from "../assets/login-welcome.webp";
 import logo from "../assets/logo.webp";
 
 const ADMIN_LOGIN_IMAGE = adminImage;
-const ADMIN_LOGIN_IMAGE_ALT = "Lakefront home at dusk on Table Rock Lake";
+const ADMIN_LOGIN_IMAGE_ALT = "Illustration of a host holding a door open and welcoming two people inside";
 
 export default function AdminLogin() {
   const [showPassword, setShowPassword] = useState(false);
@@ -37,31 +38,49 @@ export default function AdminLogin() {
     }
 
     setIsSubmitting(true);
-    // TODO: Replace with a real authentication request once a backend
-    // exists. Credentials must be verified server-side, never in the browser.
-    // Until then, any email/password is accepted and the email sets the name.
-    signInAdmin(email, formData.get("remember") === "on");
-    navigate("/admin/dashboard", { replace: true });
+    try {
+      await signInAdmin(email, password, formData.get("remember") === "on");
+      navigate("/admin/dashboard", { replace: true });
+    } catch (err) {
+      if (err instanceof ApiError && err.code === "LOCKED" && err.unlockAt) {
+        const time = new Date(err.unlockAt).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" });
+        setError(`Too many attempts. Try again after ${time}.`);
+      } else {
+        setError(errorMessage(err));
+      }
+      setIsSubmitting(false);
+    }
   }
 
   return (
     <AdminAuthLayout
       image={ADMIN_LOGIN_IMAGE}
       imageAlt={ADMIN_LOGIN_IMAGE_ALT}
+      caption={
+        <>
+          <p className="font-headline text-2xl font-semibold text-primary">
+            Welcome back
+          </p>
+          {/* <p className="mt-2 font-body text-sm leading-relaxed text-neutral-700/75">
+            Manage listings, review inquiries and keep LedgeRock at Cricket Creek
+            up to date.
+          </p> */}
+        </>
+      }
     >
-      <h1>
+      <h1 className="flex justify-center lg:justify-start">
         {/* mix-blend-multiply drops the logo's white background on the cream panel */}
         <img
           src={logo}
           alt="LedgeRock at Cricket Creek"
-          className="h-20 w-auto mix-blend-multiply"
+          className="h-14 w-auto mix-blend-multiply sm:h-20"
         />
       </h1>
-      <p className="mt-3 font-body text-sm text-neutral-700/70">
+      <p className="mt-3 text-center font-body text-sm text-neutral-700/70 lg:text-left">
         Admin Portal Access
       </p>
 
-      <form onSubmit={handleSubmit} noValidate className="mt-10 space-y-5">
+      <form onSubmit={handleSubmit} noValidate className="mt-8 space-y-5 sm:mt-10">
         <div>
           <label
             htmlFor="admin-email"
@@ -159,7 +178,7 @@ export default function AdminLogin() {
         </button>
       </form>
 
-      <p className="mt-12 text-center font-body text-xs text-neutral-700/70">
+      <p className="mt-10 text-center font-body text-xs text-neutral-700/70">
         Need assistance?{" "}
         <a
           href="mailto:danb@lakeshorepropgrp.com?subject=Admin%20portal%20support"

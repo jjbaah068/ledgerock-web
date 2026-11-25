@@ -21,9 +21,10 @@ import {
   SidebarMenuItem,
   SidebarRail,
 } from "@/components/ui/sidebar";
-import { initials, resizeAvatar, type AdminSession } from "@/lib/adminsession";
+import { avatarProblem, initials, type AdminSession } from "@/lib/adminsession";
+import { useConfirm, useToast } from "@/lib/feedback";
 import { getDashboardStats } from "@/data/admindashboard";
-import { useAdminDataVersion } from "@/hooks/use-admin-data";
+import { useAdminResource } from "@/hooks/use-admin-data";
 
 const NAV_ITEMS = [
   { label: "Dashboard", href: "/admin/dashboard", icon: LayoutDashboard },
@@ -34,32 +35,60 @@ const NAV_ITEMS = [
 
 interface AdminSidebarProps {
   admin: AdminSession;
-  /** Called with a new photo (data URL), or undefined to remove it. */
-  onAvatarChange: (avatarUrl: string | undefined) => void;
+  onAvatarChange: (file: File | null) => Promise<void>;
   onLogout: () => void;
 }
 
 export default function AdminSidebar({ admin, onAvatarChange, onLogout }: AdminSidebarProps) {
   const { pathname } = useLocation();
-  useAdminDataVersion(); // keep the Inquiries badge current
-  const stats = getDashboardStats();
+  const { data: stats } = useAdminResource(getDashboardStats);
   const fileInput = useRef<HTMLInputElement>(null);
-  const [photoError, setPhotoError] = useState<string | null>(null);
+  const [photoBusy, setPhotoBusy] = useState(false);
+  const toast = useToast();
+  const confirm = useConfirm();
+
+  async function uploadPhoto(file: File) {
+    setPhotoBusy(true);
+    try {
+      await onAvatarChange(file);
+      toast.success({ source: "Profile · Photo", title: "Profile photo updated", description: `${file.name} is now your profile photo.` });
+    } catch (error) {
+      toast.fromError(error, { source: "Profile · Photo", title: "Your photo wasn't uploaded" });
+    } finally {
+      setPhotoBusy(false);
+    }
+  }
+
+  async function removePhoto() {
+    setPhotoBusy(true);
+    try {
+      const confirmed = await confirm({
+        tone: "danger",
+        title: "Remove your profile photo?",
+        description: "Your initials will be shown instead. You can add a new photo at any time.",
+        subject: { label: admin.name, detail: admin.email },
+        confirmLabel: "Remove photo",
+        busyLabel: "Removing…",
+        action: () => onAvatarChange(null),
+      });
+      if (confirmed) toast.success({ source: "Profile · Photo", title: "Profile photo removed", description: "Your initials are shown instead." });
+    } catch (error) {
+      toast.fromError(error, { source: "Profile · Photo", title: "Your photo wasn't removed" });
+    } finally {
+      setPhotoBusy(false);
+    }
+  }
 
   async function handlePhoto(event: ChangeEvent<HTMLInputElement>) {
     const file = event.target.files?.[0];
     event.target.value = "";
     if (!file) return;
-    if (!file.type.startsWith("image/")) {
-      setPhotoError("Please choose an image file.");
+    const problem = avatarProblem(file);
+    if (problem) {
+      toast.error({ source: "Profile · Photo", title: "That file can't be used", description: problem, reference: `${file.name} · ${Math.round(file.size / 1024)} KB` });
       return;
     }
-    try {
-      onAvatarChange(await resizeAvatar(file));
-      setPhotoError(null);
-    } catch {
-      setPhotoError("That image couldn't be loaded.");
-    }
+    await uploadPhoto(file);
   }
 
   return (
@@ -72,6 +101,7 @@ export default function AdminSidebar({ admin, onAvatarChange, onLogout }: AdminS
               <button
                 type="button"
                 onClick={() => fileInput.current?.click()}
+                disabled={photoBusy}
                 aria-label={admin.avatarUrl ? "Change profile photo" : "Add profile photo"}
                 title={admin.avatarUrl ? "Change profile photo" : "Add profile photo"}
                 className="group/avatar relative size-11 shrink-0 rounded-full ring-2 ring-white transition focus-visible:outline-none focus-visible:ring-sidebar-ring group-data-[collapsible=icon]:size-8"
@@ -107,7 +137,8 @@ export default function AdminSidebar({ admin, onAvatarChange, onLogout }: AdminS
                 {admin.avatarUrl && (
                   <button
                     type="button"
-                    onClick={() => onAvatarChange(undefined)}
+                    onClick={removePhoto}
+                    disabled={photoBusy}
                     className="mt-0.5 rounded-sm font-body text-[11px] text-sidebar-foreground/60 underline-offset-2 hover:text-red-600 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sidebar-ring"
                   >
                     Remove photo
@@ -118,17 +149,12 @@ export default function AdminSidebar({ admin, onAvatarChange, onLogout }: AdminS
             <input
               ref={fileInput}
               type="file"
-              accept="image/*"
+              accept=".jpg,.jpeg,.gif,.png,image/jpeg,image/gif,image/png"
               onChange={handlePhoto}
               className="sr-only"
               tabIndex={-1}
               aria-hidden="true"
             />
-            {photoError && (
-              <p role="alert" className="mt-2 px-1 font-body text-xs text-red-600 group-data-[collapsible=icon]:hidden">
-                {photoError}
-              </p>
-            )}
           </SidebarMenuItem>
         </SidebarMenu>
       </SidebarHeader>
@@ -140,7 +166,7 @@ export default function AdminSidebar({ admin, onAvatarChange, onLogout }: AdminS
             <SidebarMenu className="gap-3">
               {NAV_ITEMS.map(({ label, href, icon: Icon, badge }) => {
                 const isActive = pathname.startsWith(href);
-                const count = badge ? stats[badge] : 0;
+                const count = badge && stats ? stats[badge] : 0;
                 return (
                   <SidebarMenuItem key={href}>
                     <SidebarMenuButton

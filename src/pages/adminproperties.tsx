@@ -11,12 +11,16 @@ import {
   Trash2,
 } from "lucide-react";
 import {
-  ADMIN_PROPERTIES,
   deleteAdminProperty,
+  formatUsd,
+  listAdminProperties,
   updateAdminProperty,
   type AdminProperty,
   type AdminPropertyStatus,
 } from "@/data/admindashboard";
+import { useAdminResource } from "@/hooks/use-admin-data";
+import { AdminError, AdminLoading } from "@/components/adminstatus";
+import { useConfirm, useToast } from "@/lib/feedback";
 
 type Filter = "All" | AdminPropertyStatus;
 const FILTERS: Filter[] = ["All", "Published", "Draft", "Sold"];
@@ -27,18 +31,14 @@ const STATUS_BADGE: Record<AdminPropertyStatus, string> = {
   Sold: "bg-tertiary text-white",
 };
 
-const priceFormatter = new Intl.NumberFormat("en-US", {
-  style: "currency",
-  currency: "USD",
-  maximumFractionDigits: 0,
-});
-
 export default function AdminProperties() {
-  // Local copy so status changes and deletes show immediately. Swap for real
-  // API calls once properties are stored on a server.
-  const [properties, setProperties] = useState<AdminProperty[]>(() => [...ADMIN_PROPERTIES]);
+  const { data, error, loading } = useAdminResource(listAdminProperties);
+  const properties = useMemo(() => data ?? [], [data]);
   const [filter, setFilter] = useState<Filter>("All");
   const [query, setQuery] = useState("");
+  const [busyId, setBusyId] = useState<string | null>(null);
+  const toast = useToast();
+  const confirm = useConfirm();
 
   const visible = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -52,17 +52,69 @@ export default function AdminProperties() {
       );
   }, [properties, filter, query]);
 
-  function setStatus(id: string, status: AdminPropertyStatus) {
-    const changes: Partial<AdminProperty> = { status };
-    if (status === "Sold") changes.soldAt = new Date().toISOString();
-    updateAdminProperty(id, changes);
-    setProperties((list) => list.map((p) => (p.id === id ? { ...p, ...changes } : p)));
+  const location = (p: AdminProperty) => [p.address, p.city].filter(Boolean).join(", ") || "No address yet";
+
+  async function publish(property: AdminProperty) {
+    setBusyId(property.id);
+    try {
+      await updateAdminProperty(property.id, { status: "Published" });
+      toast.success({
+        source: "Properties · Publish",
+        title: "Listing published",
+        description: `"${property.title}" is now live on the public site.`,
+      });
+    } catch (err) {
+      toast.fromError(err, {
+        source: "Properties · Publish",
+        title: `"${property.title}" can't be published yet`,
+      });
+    } finally {
+      setBusyId(null);
+    }
   }
 
-  function remove(property: AdminProperty) {
-    if (window.confirm(`Delete "${property.title}"? This can't be undone.`)) {
-      deleteAdminProperty(property.id);
-      setProperties((list) => list.filter((p) => p.id !== property.id));
+  async function markSold(property: AdminProperty) {
+    setBusyId(property.id);
+    try {
+      const confirmed = await confirm({
+        tone: "warning",
+        title: "Mark this property as sold?",
+        description: "It will show as Sold on the public site and count toward Sold (YTD). You can change the status later from Edit.",
+        subject: { label: property.title, detail: `${location(property)} · ${formatUsd(property.price)}` },
+        confirmLabel: "Mark as Sold",
+        busyLabel: "Saving…",
+        action: () => updateAdminProperty(property.id, { status: "Sold" }),
+      });
+      if (confirmed) {
+        toast.success({ source: "Properties · Status", title: "Marked as sold", description: `"${property.title}" is now marked as Sold.` });
+      }
+    } catch (err) {
+      toast.fromError(err, { source: "Properties · Status", title: `Couldn't mark "${property.title}" as sold` });
+    } finally {
+      setBusyId(null);
+    }
+  }
+
+  async function remove(property: AdminProperty) {
+    setBusyId(property.id);
+    try {
+      const photos = property.images.length;
+      const confirmed = await confirm({
+        tone: "danger",
+        title: "Delete this property?",
+        description: `This permanently removes the listing${photos ? ` and its ${photos} photo${photos === 1 ? "" : "s"}` : ""}. This can't be undone.`,
+        subject: { label: property.title, detail: `${location(property)} · ${property.status}` },
+        confirmLabel: "Delete property",
+        busyLabel: "Deleting…",
+        action: () => deleteAdminProperty(property.id),
+      });
+      if (confirmed) {
+        toast.success({ source: "Properties · Delete", title: "Property deleted", description: `"${property.title}" was removed.` });
+      }
+    } catch (err) {
+      toast.fromError(err, { source: "Properties · Delete", title: `Couldn't delete "${property.title}"` });
+    } finally {
+      setBusyId(null);
     }
   }
 
@@ -97,6 +149,8 @@ export default function AdminProperties() {
           </Link>
         </div>
       </div>
+
+      {error && <AdminError message={error} retry />}
 
       {/* Filters + search */}
       <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
@@ -141,13 +195,17 @@ export default function AdminProperties() {
         </label>
       </div>
 
+      {loading && <AdminLoading label="Loading properties..." />}
+
       {/* Grid */}
+      {!loading && (
       <ul className="mt-6 grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
         {visible.map((property) => (
           <li key={property.id}>
             <PropertyCard
               property={property}
-              onStatusChange={(s) => setStatus(property.id, s)}
+              busy={busyId === property.id}
+              onStatusChange={(s) => (s === "Sold" ? markSold(property) : publish(property))}
               onDelete={() => remove(property)}
             />
           </li>
@@ -167,8 +225,9 @@ export default function AdminProperties() {
           </Link>
         </li>
       </ul>
+      )}
 
-      {visible.length === 0 && (
+      {!loading && data && visible.length === 0 && (
         <p role="status" className="mt-6 font-body text-sm text-neutral-700/70">
           {isFiltering
             ? "No properties match your filters."
@@ -181,10 +240,12 @@ export default function AdminProperties() {
 
 function PropertyCard({
   property,
+  busy,
   onStatusChange,
   onDelete,
 }: {
   property: AdminProperty;
+  busy: boolean;
   onStatusChange: (status: AdminPropertyStatus) => void;
   onDelete: () => void;
 }) {
@@ -230,7 +291,7 @@ function PropertyCard({
               : "font-semibold text-primary"
           }`}
         >
-          {priceFormatter.format(property.price)}
+          {formatUsd(property.price)}
         </p>
 
         <div className="mt-auto flex items-center gap-2 border-t border-neutral-100 pt-3">
@@ -240,14 +301,14 @@ function PropertyCard({
           </Link>
 
           {status === "Published" && (
-            <button type="button" onClick={() => onStatusChange("Sold")} className={actionClass}>
+            <button type="button" disabled={busy} onClick={() => onStatusChange("Sold")} className={actionClass}>
               <CircleCheck className="h-3.5 w-3.5" aria-hidden="true" />
               Sold
             </button>
           )}
 
           {status === "Draft" && (
-            <button type="button" onClick={() => onStatusChange("Published")} className={actionClass}>
+            <button type="button" disabled={busy} onClick={() => onStatusChange("Published")} className={actionClass}>
               <Send className="h-3.5 w-3.5" aria-hidden="true" />
               Publish
             </button>
@@ -256,6 +317,7 @@ function PropertyCard({
           <button
             type="button"
             onClick={onDelete}
+            disabled={busy}
             aria-label={`Delete ${property.title}`}
             className="ml-auto rounded-md p-1 text-red-500 transition hover:text-red-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500"
           >

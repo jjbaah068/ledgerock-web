@@ -141,3 +141,7 @@
     @apply font-sans;
   }
 }
+@keyframes toast-countdown {
+  from { transform: scaleX(1); }
+  to { transform: scaleX(0); }
+}

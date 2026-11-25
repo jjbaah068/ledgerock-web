@@ -4,8 +4,6 @@ import { motion } from "motion/react";
 import {
     ArrowLeft,
     MapPin,
-    Ruler,
-    Waves,
     Compass,
     Tag,
     Route,
@@ -14,10 +12,14 @@ import {
     Wifi,
     ShieldCheck,
     LockKeyhole,
+    CircleCheck,
 } from "lucide-react";
 import Navbar from "../components/navbar";
 import Footer from "../components/footer";
-import { getLotById, STATUS_STYLES } from "../data/lots";
+import { STATUS_STYLES } from "../data/lots";
+import { submitInquiry } from "../data/admindashboard";
+import { usePublicListing } from "../hooks/use-public-listings";
+import { errorFields, errorMessage } from "../lib/api";
 
 
 const CINEMATIC_EASE = [0.16, 1, 0.3, 1] as const;
@@ -33,28 +35,53 @@ const LOT_FEATURES = [
 
 export default function PropertyDetail() {
     const { lotId } = useParams<{ lotId: string }>();
-    const lot = lotId ? getLotById(lotId) : undefined;
+    const { listing: lot, loading, failed } = usePublicListing(lotId ?? "");
+    const [selectedPhoto, setSelectedPhoto] = useState({ id: "", index: 0 });
 
     const [isSubmitted, setIsSubmitted] = useState(false);
     const [isSubmitting, setIsSubmitting] = useState(false);
+    const [submitError, setSubmitError] = useState<string | null>(null);
 
     async function handleSubmit(event: FormEvent<HTMLFormElement>) {
         event.preventDefault();
         const form = event.currentTarget;
         const formData = new FormData(form);
-
-        // Honeypot check —
-        if (formData.get("company")) {
-            return;
-        }
+        const text = (key: string) => String(formData.get(key) ?? "").trim();
 
         setIsSubmitting(true);
+        setSubmitError(null);
+        try {
+            await submitInquiry({
+                name: text("name"),
+                email: text("email"),
+                phone: text("phone") || undefined,
+                message: text("message"),
+                topic: "Private tour",
+                lotId: lot?.lotId,
+                propertyId: lot?.propertyId,
+                company: String(formData.get("company") ?? "") || undefined,
+            });
+            setIsSubmitted(true);
+            form.reset();
+        } catch (error) {
+            setSubmitError(Object.values(errorFields(error))[0] ?? errorMessage(error));
+        } finally {
+            setIsSubmitting(false);
+        }
+    }
 
-        console.log("Property inquiry submission:", Object.fromEntries(formData));
-
-        setIsSubmitting(false);
-        setIsSubmitted(true);
-        form.reset();
+    if (loading) {
+        return (
+            <>
+                <Navbar />
+                <section className="bg-white px-6 py-24 text-center lg:px-8">
+                    <p role="status" className="font-body text-[15px] text-neutral-700/80">
+                        Loading property...
+                    </p>
+                </section>
+                <Footer />
+            </>
+        );
     }
 
     if (!lot) {
@@ -63,10 +90,10 @@ export default function PropertyDetail() {
                 <Navbar />
                 <section className="bg-white px-6 py-24 text-center lg:px-8">
                     <h1 className="font-headline text-3xl font-semibold text-neutral-700">
-                        We couldn&apos;t find that lot.
+                        {failed ? "We couldn't load that property." : "We couldn't find that lot."}
                     </h1>
                     <p className="mt-3 font-body text-[15px] text-neutral-700/80">
-                        It may have been renumbered or is no longer listed.
+                        {failed ? "Please check your connection and try again." : "It may have been renumbered or is no longer listed."}
                     </p>
                     <Link
                         to="/properties"
@@ -80,7 +107,23 @@ export default function PropertyDetail() {
         );
     }
 
-    const [mainImage, ...thumbnails] = lot.gallery;
+    const photoIndex = selectedPhoto.id === lot.id ? selectedPhoto.index : 0;
+    const mainImage = lot.gallery[photoIndex] ?? lot.image;
+    const thumbnails = lot.gallery
+        .map((src, index) => ({ src, index }))
+        .filter(({ index }) => index !== photoIndex);
+    const photoAlt = lot.isPlaceholderImage
+        ? "Example home built at Ledge Rock"
+        : `${lot.name} at Ledge Rock at Cricket Creek`;
+    const quickSpecs = [
+        ...lot.specs,
+        ...(lot.viewType ? [{ label: "View Type", value: lot.viewType, icon: Compass }] : []),
+        { label: "Status", value: lot.status, icon: Tag },
+    ];
+    const featureList = lot.lotId
+        ? LOT_FEATURES
+        : lot.features.map((label) => ({ icon: CircleCheck, label }));
+    const noun = lot.lotId ? "Lot" : "Property";
 
     return (
         <>
@@ -108,11 +151,12 @@ export default function PropertyDetail() {
                                 </span>
                                 <span className="flex items-center gap-1.5 font-body text-sm text-neutral-700/70">
                                     <MapPin className="h-4 w-4 shrink-0" />
-                                    Ledge Rock at Cricket Creek, Omaha, AR
+                                    {lot.location}
                                 </span>
                             </div>
                             <h1 className="mt-2 font-headline text-3xl font-semibold text-neutral-700 sm:text-4xl">
-                                {lot.name} &mdash; {lot.viewType}
+                                {lot.name}
+                                {lot.viewType && <> &mdash; {lot.viewType}</>}
                             </h1>
                         </div>
 
@@ -127,15 +171,11 @@ export default function PropertyDetail() {
                             initial={{ opacity: 0, scale: 1.04, filter: "blur(10px)" }}
                             animate={{ opacity: 1, scale: 1, filter: "blur(0px)" }}
                             transition={{ duration: 0.8, ease: CINEMATIC_EASE }}
-                            className="relative overflow-hidden rounded-2xl sm:col-span-2"
+                            className={`relative overflow-hidden rounded-2xl ${thumbnails.length > 0 ? "sm:col-span-2" : "sm:col-span-3"}`}
                         >
                             <img
                                 src={mainImage}
-                                alt={
-                                    lot.isPlaceholderImage
-                                        ? "Example home built at Ledge Rock"
-                                        : `${lot.name} at Ledge Rock at Cricket Creek`
-                                }
+                                alt={photoAlt}
                                 className="h-[420px] w-full object-cover"
                             />
                             {lot.isPlaceholderImage && (
@@ -145,10 +185,14 @@ export default function PropertyDetail() {
                             )}
                         </motion.div>
 
-                        <div className="grid grid-cols-2 gap-4 sm:grid-cols-1">
-                            {thumbnails.map((src: string | undefined, i: number) => (
-                                <motion.div
-                                    key={i}
+                        {thumbnails.length > 0 && (
+                        <div data-lenis-prevent className="grid max-h-[420px] grid-cols-2 gap-4 overflow-y-auto sm:grid-cols-1">
+                            {thumbnails.map(({ src, index }, i) => (
+                                <motion.button
+                                    type="button"
+                                    key={src}
+                                    onClick={() => setSelectedPhoto({ id: lot.id, index })}
+                                    aria-label={`Show photo ${index + 1} of ${lot.gallery.length}`}
                                     initial={{ opacity: 0, y: 24, filter: "blur(6px)" }}
                                     animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
                                     transition={{
@@ -156,20 +200,17 @@ export default function PropertyDetail() {
                                         ease: CINEMATIC_EASE,
                                         delay: 0.3 + i * 0.12,
                                     }}
-                                    className="overflow-hidden rounded-2xl"
+                                    className="overflow-hidden rounded-2xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
                                 >
                                     <img loading="lazy" decoding="async"
                                         src={src}
-                                        alt={
-                                            lot.isPlaceholderImage
-                                                ? "Example home built at Ledge Rock"
-                                                : `${lot.name} at Ledge Rock at Cricket Creek`
-                                        }
+                                        alt={photoAlt}
                                         className="h-[200px] w-full object-cover"
                                     />
-                                </motion.div>
+                                </motion.button>
                             ))}
                         </div>
+                        )}
                     </div>
 
                     {/* Body: details left, inline inquiry form right */}
@@ -177,53 +218,37 @@ export default function PropertyDetail() {
                         <div className="lg:col-span-2">
                             {/* Quick specs */}
                             <div className="grid grid-cols-2 gap-6 border-y border-neutral-100 py-6 sm:grid-cols-4">
-                                <div>
-                                    <Ruler className="h-5 w-5 text-primary" />
-                                    <p className="mt-2 font-body text-sm font-medium text-neutral-700">
-                                        {lot.acreage}
-                                    </p>
-                                    <p className="font-body text-xs text-neutral-700/60">Acreage</p>
-                                </div>
-                                <div>
-                                    <Waves className="h-5 w-5 text-primary" />
-                                    <p className="mt-2 font-body text-sm font-medium text-neutral-700">
-                                        {lot.shoreline}
-                                    </p>
-                                    <p className="font-body text-xs text-neutral-700/60">Shoreline</p>
-                                </div>
-                                <div>
-                                    <Compass className="h-5 w-5 text-primary" />
-                                    <p className="mt-2 font-body text-sm font-medium text-neutral-700">
-                                        {lot.viewType}
-                                    </p>
-                                    <p className="font-body text-xs text-neutral-700/60">View Type</p>
-                                </div>
-                                <div>
-                                    <Tag className="h-5 w-5 text-primary" />
-                                    <p className="mt-2 font-body text-sm font-medium text-neutral-700">
-                                        {lot.status}
-                                    </p>
-                                    <p className="font-body text-xs text-neutral-700/60">Status</p>
-                                </div>
+                                {quickSpecs.map(({ label, value, icon: Icon }) => (
+                                    <div key={label}>
+                                        <Icon className="h-5 w-5 text-primary" />
+                                        <p className="mt-2 font-body text-sm font-medium text-neutral-700">
+                                            {value}
+                                        </p>
+                                        <p className="font-body text-xs text-neutral-700/60">{label}</p>
+                                    </div>
+                                ))}
                             </div>
 
                             {/* About */}
+                            {lot.description && (
                             <div className="mt-8">
                                 <h2 className="font-headline text-xl font-semibold text-neutral-700">
-                                    About This Lot
+                                    About This {noun}
                                 </h2>
-                                <p className="mt-3 font-body text-[15px] leading-relaxed text-neutral-700/85">
+                                <p className="mt-3 whitespace-pre-line font-body text-[15px] leading-relaxed text-neutral-700/85">
                                     {lot.description}
                                 </p>
                             </div>
+                            )}
 
-                            {/* Lot features */}
+                            {/* Features */}
+                            {featureList.length > 0 && (
                             <div className="mt-10">
                                 <h2 className="font-headline text-xl font-semibold text-neutral-700">
-                                    Lot Features
+                                    {noun} Features
                                 </h2>
                                 <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-3">
-                                    {LOT_FEATURES.map((feature) => {
+                                    {featureList.map((feature) => {
                                         const Icon = feature.icon;
                                         return (
                                             <div
@@ -239,6 +264,7 @@ export default function PropertyDetail() {
                                     })}
                                 </div>
                             </div>
+                            )}
                         </div>
 
                         {/* Inline inquiry sidebar */}
@@ -256,7 +282,7 @@ export default function PropertyDetail() {
                                 ) : (
                                     <>
                                         <h3 className="font-headline text-lg font-semibold text-neutral-700">
-                                            Interested in this lot?
+                                            Interested in this {noun.toLowerCase()}?
                                         </h3>
                                         <p className="mt-1 font-body text-sm text-neutral-700/70">
                                             Reach out to schedule a private viewing or ask questions.
@@ -339,6 +365,12 @@ export default function PropertyDetail() {
                                                     className="mt-1.5 w-full rounded-lg border border-neutral-100 px-4 py-2.5 font-body text-[15px] text-neutral-700 focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
                                                 />
                                             </div>
+
+                                            {submitError && (
+                                                <p role="alert" className="rounded-lg bg-red-50 px-4 py-3 font-body text-sm text-red-700">
+                                                    {submitError}
+                                                </p>
+                                            )}
 
                                             <button
                                                 type="submit"

@@ -4,6 +4,7 @@ import { MapPin, Ruler, Waves, ArrowRight } from "lucide-react";
 import lotimg1 from "../assets/img2.webp";
 import lotimg2 from "../assets/img3.webp";
 import lotimg3 from "../assets/img4.webp";
+import { usePublicListings } from "../hooks/use-public-listings";
 
 type LotStatus = "Available" | "Reserved" | "Sold";
 
@@ -40,8 +41,8 @@ const FEATURED_LOTS: Lot[] = [
     image: lotimg2,
   },
   {
-    id: "lot-9",
-    name: "Lot 9",
+    id: "lot-6",
+    name: "Lot 6",
     status: "Available",
     price: "Price on Request",
     acreage: "1.3 acres",
@@ -59,7 +60,23 @@ const STATUS_STYLES: Record<LotStatus, string> = {
 
 const CINEMATIC_EASE = [0.16, 1, 0.3, 1] as const;
 
+const FALLBACK_SLIDES = FEATURED_LOTS.map((lot) => ({
+  id: lot.id,
+  name: lot.name,
+  status: lot.status,
+  price: lot.price,
+  viewType: lot.viewType as Lot["viewType"] | undefined,
+  image: lot.image,
+  specs: [
+    { label: "Acreage", value: lot.acreage, icon: Ruler },
+    { label: "Shoreline", value: lot.shoreline, icon: Waves },
+  ],
+}));
+
 export default function FeaturedLotsPinned() {
+  const { published } = usePublicListings();
+  const slides = [...published.filter((listing) => listing.status === "Available"), ...FALLBACK_SLIDES].slice(0, 3);
+  const slideKey = slides.map((slide) => slide.id).join();
   const [activeIndex, setActiveIndex] = useState(0);
   const slideRefs = useRef<Array<HTMLDivElement | null>>([]);
 
@@ -81,7 +98,7 @@ export default function FeaturedLotsPinned() {
 
     slideRefs.current.forEach((el) => el && observer.observe(el));
     return () => observer.disconnect();
-  }, []);
+  }, [slideKey]);
 
   return (
     <section className="relative">
@@ -102,7 +119,7 @@ export default function FeaturedLotsPinned() {
           locks to each lot in turn; once you pass the last one, normal
           page scroll continues below as usual. */}
       <div className="h-screen snap-y snap-mandatory overflow-y-scroll">
-        {FEATURED_LOTS.map((lot, index) => (
+        {slides.map((lot, index) => (
           <div
             key={lot.id}
             ref={(el) => {
@@ -119,7 +136,7 @@ export default function FeaturedLotsPinned() {
 
             {/* Progress dots — right edge, shows which lot is active */}
             <div className="absolute right-6 top-1/2 z-10 hidden -translate-y-1/2 flex-col gap-3 sm:flex">
-              {FEATURED_LOTS.map((_, dotIndex) => (
+              {slides.map((_, dotIndex) => (
                 <span
                   key={dotIndex}
                   className={`h-2 w-2 rounded-full transition-all ${
@@ -147,7 +164,8 @@ export default function FeaturedLotsPinned() {
               </span>
 
               <h3 className="mt-4 font-headline text-4xl font-semibold sm:text-5xl">
-                {lot.name} &mdash; {lot.viewType}
+                {lot.name}
+                {lot.viewType && <> &mdash; {lot.viewType}</>}
               </h3>
               <p className="mt-2 font-body text-xl font-semibold text-tertiary">
                 {lot.price}
@@ -155,18 +173,16 @@ export default function FeaturedLotsPinned() {
 
               <p className="mt-3 flex items-center gap-1.5 font-body text-sm text-white/80">
                 <MapPin className="h-4 w-4 shrink-0" />
-                Ledge Rock at Cricket Creek, Omaha, AR
+                {"location" in lot ? lot.location : "Ledge Rock at Cricket Creek, Omaha, AR"}
               </p>
 
-              <div className="mt-5 flex items-center gap-6 font-body text-sm text-white/85">
-                <span className="flex items-center gap-1.5">
-                  <Ruler className="h-4 w-4 shrink-0" />
-                  {lot.acreage}
-                </span>
-                <span className="flex items-center gap-1.5">
-                  <Waves className="h-4 w-4 shrink-0" />
-                  {lot.shoreline}
-                </span>
+              <div className="mt-5 flex flex-wrap items-center gap-6 font-body text-sm text-white/85">
+                {lot.specs.slice(0, 2).map(({ label, value, icon: Icon }) => (
+                  <span key={label} className="flex items-center gap-1.5">
+                    <Icon className="h-4 w-4 shrink-0" />
+                    {value}
+                  </span>
+                ))}
               </div>
 
               <a

@@ -1,10 +1,12 @@
 import { Link } from "react-router-dom";
 import { ArrowLeft, Building2, ChevronRight } from "lucide-react";
-import { ADMIN_PROPERTIES } from "@/data/admindashboard";
+import { listAdminPropertiesByTitle } from "@/data/admindashboard";
+import { useAdminResource } from "@/hooks/use-admin-data";
+import { AdminError, AdminLoading } from "@/components/adminstatus";
 
-/** Reached from the "Edit Property" button: pick which listing to edit. */
 export default function AdminChooseProperty() {
-  const properties = [...ADMIN_PROPERTIES].sort((a, b) => a.title.localeCompare(b.title));
+  const { data, error, loading } = useAdminResource(listAdminPropertiesByTitle);
+  const properties = data ?? [];
 
   return (
     <div className="mx-auto w-full max-w-3xl px-4 py-8 sm:px-8 lg:py-10">
@@ -22,8 +24,16 @@ export default function AdminChooseProperty() {
         Choose the listing you want to update.
       </p>
 
+      {error && <AdminError message={error} retry />}
+
       <div className="mt-8 rounded-2xl bg-white p-3 shadow-[0_6px_20px_-12px_rgba(74,78,74,0.35)] sm:p-4">
-        {properties.length === 0 ? (
+        {loading ? (
+          <AdminLoading />
+        ) : !data ? (
+          <p className="px-6 py-12 text-center font-body text-sm text-neutral-700/70">
+            Properties could not be loaded.
+          </p>
+        ) : properties.length === 0 ? (
           <div className="px-6 py-12 text-center">
             <span className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-primary/10">
               <Building2 className="h-5 w-5 text-primary" aria-hidden="true" />

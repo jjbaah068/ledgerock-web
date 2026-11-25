@@ -1,4 +1,4 @@
-import { useRef, useState, type ChangeEvent, type ComponentType, type ReactNode } from "react";
+import { useEffect, useRef, useState, type ChangeEvent, type ComponentType, type ReactNode } from "react";
 import {
   AlertCircle,
   Bell,
@@ -10,17 +10,23 @@ import {
 } from "lucide-react";
 import { useAdmin, useUpdateAdmin } from "@/components/adminlayout";
 import {
+  avatarProblem,
+  changeAdminPassword,
+  DEFAULT_ADMIN_SETTINGS,
   getAdminSettings,
   initials,
-  resizeAvatar,
+  MAX_PASSWORD_BYTES,
+  MIN_PASSWORD_BYTES,
+  removeAdminAvatar,
   saveAdminSettings,
+  updateAdminProfile,
+  uploadAdminAvatar,
   type AdminSettings,
+  type ProfileChanges,
 } from "@/lib/adminsession";
+import { errorFields, errorMessage } from "@/lib/api";
+import { describeError, useToast } from "@/lib/feedback";
 
-const MAX_PHOTO_BYTES = 800 * 1024;
-const PHOTO_TYPES = ["image/jpeg", "image/gif", "image/png"];
-
-// TODO: replace with the real office list once confirmed.
 const OFFICE_OPTIONS = ["Ledge Rock at Cricket Creek", "Remote / Home Office"];
 
 type NotificationKey = keyof AdminSettings["notifications"];
@@ -34,8 +40,9 @@ interface ProfileForm {
   firstName: string;
   lastName: string;
   email: string;
-  avatarUrl: string | undefined;
 }
+
+type AvatarDraft = { file: File; url: string } | "remove" | null;
 
 interface PasswordForm {
   current: string;
@@ -51,26 +58,51 @@ const inputClass =
 const cardClass =
   "rounded-2xl bg-white p-5 shadow-[0_6px_20px_-12px_rgba(74,78,74,0.35)] sm:p-6";
 
-function splitName(name: string): [string, string] {
-  const [first = "", ...rest] = name.trim().split(/\s+/);
-  return [first, rest.join(" ")];
-}
-
 export default function AdminSettings() {
   const admin = useAdmin();
   const updateAdmin = useUpdateAdmin();
+  const toast = useToast();
   const photoInput = useRef<HTMLInputElement>(null);
 
-  const [profile, setProfile] = useState<ProfileForm>(() => {
-    const [firstName, lastName] = splitName(admin.name);
-    return { firstName, lastName, email: admin.email, avatarUrl: admin.avatarUrl };
+  const [profile, setProfile] = useState<ProfileForm>({
+    firstName: admin.firstName,
+    lastName: admin.lastName,
+    email: admin.email,
   });
+  const [avatarDraft, setAvatarDraft] = useState<AvatarDraft>(null);
   const [passwords, setPasswords] = useState<PasswordForm>({ current: "", next: "", confirm: "" });
-  const [settings, setSettings] = useState<AdminSettings>(() => getAdminSettings());
+  const [settings, setSettings] = useState<AdminSettings>(DEFAULT_ADMIN_SETTINGS);
+  const [settingsReady, setSettingsReady] = useState(false);
+  const [saving, setSaving] = useState(false);
   const [errors, setErrors] = useState<Errors>({});
   const [photoError, setPhotoError] = useState<string | null>(null);
   const [status, setStatus] = useState<{ kind: "saved" | "error" | "info"; text: string } | null>(
     null,
+  );
+  const avatarUrl = avatarDraft === "remove" ? undefined : (avatarDraft?.url ?? admin.avatarUrl);
+
+  useEffect(() => {
+    let active = true;
+    getAdminSettings()
+      .then((loaded) => {
+        if (!active) return;
+        setSettings(loaded);
+        setSettingsReady(true);
+      })
+      .catch((error: unknown) => {
+        if (active) setStatus({ kind: "error", text: `Settings could not be loaded. ${errorMessage(error)}` });
+      });
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  const draftUrl = avatarDraft && avatarDraft !== "remove" ? avatarDraft.url : null;
+  useEffect(
+    () => () => {
+      if (draftUrl) URL.revokeObjectURL(draftUrl);
+    },
+    [draftUrl],
   );
 
   function editProfile<K extends keyof ProfileForm>(key: K, value: ProfileForm[K]) {
@@ -90,37 +122,38 @@ export default function AdminSettings() {
     setStatus(null);
   }
 
-  async function choosePhoto(event: ChangeEvent<HTMLInputElement>) {
+  function choosePhoto(event: ChangeEvent<HTMLInputElement>) {
     const file = event.target.files?.[0];
     event.target.value = "";
     if (!file) return;
-    if (!PHOTO_TYPES.includes(file.type)) {
-      setPhotoError("Please choose a JPG, GIF or PNG image.");
+    const problem = avatarProblem(file);
+    if (problem) {
+      setPhotoError(problem);
       return;
     }
-    if (file.size > MAX_PHOTO_BYTES) {
-      setPhotoError("That image is larger than 800K. Please choose a smaller one.");
-      return;
-    }
-    try {
-      editProfile("avatarUrl", await resizeAvatar(file));
-      setPhotoError(null);
-    } catch {
-      setPhotoError("That image couldn't be loaded.");
-    }
+    setAvatarDraft({ file, url: URL.createObjectURL(file) });
+    setPhotoError(null);
+    setStatus(null);
   }
 
-  function save() {
+  async function save() {
+    if (saving || !settingsReady) return;
     const found: Errors = {};
+    const email = profile.email.trim().toLowerCase();
+    const emailChanged = email !== admin.email;
     if (!profile.firstName.trim()) found.firstName = "Enter a first name.";
-    if (!/^\S+@\S+\.\S+$/.test(profile.email.trim())) found.email = "Enter a valid email address.";
+    if (!/^\S+@\S+\.\S+$/.test(email)) found.email = "Enter a valid email address.";
 
-    const wantsPasswordChange = Boolean(passwords.current || passwords.next || passwords.confirm);
+    const { current, next, confirm } = passwords;
+    const wantsPasswordChange = Boolean(next || confirm);
     if (wantsPasswordChange) {
-      if (!passwords.current) found.current = "Enter your current password.";
-      if (passwords.next.length < 8) found.next = "Use at least 8 characters.";
-      if (passwords.confirm !== passwords.next) found.confirm = "Passwords don't match.";
+      const bytes = new TextEncoder().encode(next).length;
+      if (!current) found.current = "Enter your current password.";
+      if (bytes < MIN_PASSWORD_BYTES) found.next = `Use at least ${MIN_PASSWORD_BYTES} characters.`;
+      else if (bytes > MAX_PASSWORD_BYTES) found.next = `Use at most ${MAX_PASSWORD_BYTES} bytes.`;
+      if (confirm !== next) found.confirm = "Passwords don't match.";
     }
+    if (emailChanged && !current) found.current = "Enter your current password to change your email.";
 
     setErrors(found);
     const firstError = Object.keys(found)[0];
@@ -130,22 +163,70 @@ export default function AdminSettings() {
       return;
     }
 
-    updateAdmin({
-      name: [profile.firstName.trim(), profile.lastName.trim()].filter(Boolean).join(" "),
-      email: profile.email.trim(),
-      avatarUrl: profile.avatarUrl,
-    });
-    saveAdminSettings(settings);
+    setSaving(true);
+    setStatus(null);
+    let passwordChanged = false;
+    const saved: string[] = [];
+    try {
+      if (wantsPasswordChange) {
+        await changeAdminPassword(current, next, confirm);
+        passwordChanged = true;
+        saved.push("Password (other devices were signed out)");
+        setPasswords({ current: "", next: "", confirm: "" });
+      }
 
-    if (wantsPasswordChange) {
-      // Never store passwords in the browser. TODO: send to the auth server.
+      const changes: ProfileChanges = {};
+      if (profile.firstName.trim() !== admin.firstName) changes.firstName = profile.firstName.trim();
+      if (profile.lastName.trim() !== admin.lastName) changes.lastName = profile.lastName.trim();
+      if (emailChanged) {
+        changes.email = email;
+        changes.currentPassword = passwordChanged ? next : current;
+      }
+      if (Object.keys(changes).length > 0) {
+        updateAdmin(await updateAdminProfile(changes));
+        setProfile((p) => ({ ...p, email }));
+        if (changes.firstName !== undefined || changes.lastName !== undefined) saved.push("Name");
+        if (changes.email) saved.push(`Email (now ${email})`);
+      }
+
+      if (avatarDraft === "remove") {
+        updateAdmin(await removeAdminAvatar());
+        setAvatarDraft(null);
+        saved.push("Profile photo removed");
+      } else if (avatarDraft) {
+        updateAdmin(await uploadAdminAvatar(avatarDraft.file));
+        setAvatarDraft(null);
+        saved.push("Profile photo");
+      }
+
+      setSettings(await saveAdminSettings(settings));
+      saved.push("Business info and notification preferences");
       setPasswords({ current: "", next: "", confirm: "" });
-      setStatus({
-        kind: "info",
-        text: "Profile and settings saved. Password changes aren't connected yet, so your password was not changed.",
+      toast.success({
+        source: "Settings · Save",
+        title: "Settings saved",
+        description: "Your account and business details are up to date.",
+        details: saved,
       });
-    } else {
-      setStatus({ kind: "saved", text: "Changes saved." });
+    } catch (error) {
+      const fields = errorFields(error);
+      setErrors(fields);
+      if (fields.avatar) setPhotoError(fields.avatar);
+      const first = Object.keys(fields)[0];
+      if (first) document.getElementById(`settings-${first}`)?.focus();
+      if (saved.length > 0) {
+        toast.warning({
+          source: "Settings · Save",
+          title: "Some changes were saved, but not all",
+          description: errorMessage(error),
+          details: saved.map((item) => `Saved: ${item}`),
+          reference: describeError(error).reference,
+        });
+      } else {
+        toast.fromError(error, { source: "Settings · Save", title: "Your changes weren't saved" });
+      }
+    } finally {
+      setSaving(false);
     }
   }
 
@@ -164,10 +245,11 @@ export default function AdminSettings() {
         <button
           type="button"
           onClick={save}
-          className="inline-flex items-center gap-2 self-start rounded-full bg-primary px-5 py-2.5 font-body text-sm font-semibold text-white shadow-sm transition hover:bg-primary-dark focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
+          disabled={saving || !settingsReady}
+          className="inline-flex items-center gap-2 self-start rounded-full bg-primary px-5 py-2.5 font-body text-sm font-semibold text-white shadow-sm transition hover:bg-primary-dark focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60"
         >
           <Save className="h-4 w-4" aria-hidden="true" />
-          Save Changes
+          {saving ? "Saving..." : "Save Changes"}
         </button>
       </div>
 
@@ -203,9 +285,9 @@ export default function AdminSettings() {
         <div className="space-y-6 lg:col-span-2">
           <Card icon={UserRound} title="Personal Profile">
             <div className="flex items-center gap-5">
-              {profile.avatarUrl ? (
+              {avatarUrl ? (
                 <img
-                  src={profile.avatarUrl}
+                  src={avatarUrl}
                   alt="Your profile photo"
                   className="h-20 w-20 shrink-0 rounded-full object-cover ring-4 ring-[#F5F1EA]"
                 />
@@ -226,10 +308,13 @@ export default function AdminSettings() {
                   >
                     Change Photo
                   </button>
-                  {profile.avatarUrl && (
+                  {avatarUrl && (
                     <button
                       type="button"
-                      onClick={() => editProfile("avatarUrl", undefined)}
+                      onClick={() => {
+                        setAvatarDraft(admin.avatarUrl ? "remove" : null);
+                        setStatus(null);
+                      }}
                       className="rounded-full px-3 py-1.5 font-body text-xs text-neutral-700/70 transition hover:text-red-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
                     >
                       Remove
@@ -269,7 +354,7 @@ export default function AdminSettings() {
                   />
                 )}
               </Field>
-              <Field id="settings-lastName" label="Last Name">
+              <Field id="settings-lastName" label="Last Name" error={errors.lastName}>
                 {(p) => (
                   <input
                     {...p}
@@ -345,7 +430,7 @@ export default function AdminSettings() {
         {/* Side column */}
         <div className="space-y-6">
           <Card icon={Building2} title="Business Info">
-            <Field id="settings-officePhone" label="Office Phone">
+            <Field id="settings-officePhone" label="Office Phone" error={errors.officePhone}>
               {(p) => (
                 <input
                   {...p}
@@ -358,7 +443,7 @@ export default function AdminSettings() {
                 />
               )}
             </Field>
-            <Field id="settings-mobilePhone" label="Mobile Phone">
+            <Field id="settings-mobilePhone" label="Mobile Phone" error={errors.mobilePhone}>
               {(p) => (
                 <input
                   {...p}
@@ -371,7 +456,7 @@ export default function AdminSettings() {
                 />
               )}
             </Field>
-            <Field id="settings-primaryOffice" label="Primary Office">
+            <Field id="settings-primaryOffice" label="Primary Office" error={errors.primaryOffice}>
               {(p) => (
                 <select
                   {...p}

@@ -1,46 +1,52 @@
 import type { ReactNode } from "react";
 
 interface AdminAuthLayoutProps {
-  /** Image shown in the left panel. Pass any imported asset or public URL. */
+  /** Illustration shown beside the form. Works best with a white background. */
   image: string;
-  /** Alt text for the left-panel image. Use "" if it is purely decorative. */
+  /** Alt text for the illustration. Use "" if it is purely decorative. */
   imageAlt?: string;
-  /** Optional content layered over the image (caption, tagline, etc.). */
-  imageOverlay?: ReactNode;
-  /** The form or content shown in the right panel. */
+  /** Optional heading/text shown under the illustration on larger screens. */
+  caption?: ReactNode;
+  /** The form or content shown in the form panel. */
   children: ReactNode;
 }
 
 /**
- * Two-column layout for admin auth screens: a swappable image on the left
- * and a form panel on the right. The image collapses to a short banner on
- * narrow screens so the form stays first-class on mobile.
+ * Two-column layout for admin auth screens: an illustration panel and a
+ * form panel. On phones the illustration shrinks to a short welcome banner
+ * above the form, shown whole (never cropped) so the scene still reads.
  */
 export default function AdminAuthLayout({
   image,
   imageAlt = "",
-  imageOverlay,
+  caption,
   children,
 }: AdminAuthLayoutProps) {
   return (
-    <main className="flex min-h-screen items-center justify-center bg-[#FAF7F1] p-4 sm:p-6 lg:p-10">
-      <div className="grid w-full max-w-6xl overflow-hidden rounded-3xl bg-white shadow-[0_20px_60px_-25px_rgba(74,78,74,0.35)] lg:min-h-[640px] lg:grid-cols-2">
-        {/* Left: replaceable image */}
-        <div className="relative h-48 sm:h-64 lg:h-auto">
+    <main className="flex min-h-svh items-center justify-center bg-[#FAF7F1] p-0 sm:p-6 lg:p-10">
+      <div className="grid min-h-svh w-full max-w-5xl overflow-hidden bg-white sm:min-h-0 sm:rounded-3xl sm:shadow-[0_20px_60px_-25px_rgba(74,78,74,0.35)] grid-rows-[auto_1fr] lg:min-h-[620px] lg:grid-cols-2 lg:grid-rows-1">
+        {/* Illustration panel */}
+        <div className="relative flex flex-col items-center justify-center overflow-hidden bg-[#F3EDE2] px-6 pb-2 pt-8 sm:pt-10 lg:px-12 lg:py-12">
+          {/* Soft circle behind the scene for depth */}
+          <span
+            aria-hidden="true"
+            className="absolute left-1/2 top-1/2 size-[22rem] -translate-x-1/2 -translate-y-1/2 rounded-full bg-[#EAE2D3] lg:size-[30rem] lg:-translate-y-[58%]"
+          />
+          {/* mix-blend-multiply drops the illustration's white background on the cream panel */}
           <img
             src={image}
             alt={imageAlt}
-            className="absolute inset-0 h-full w-full object-cover"
+            width={735}
+            height={736}
+            className="relative h-44 w-auto object-contain mix-blend-multiply sm:h-56 lg:h-auto lg:w-full lg:max-w-md"
           />
-          {imageOverlay && (
-            <div className="absolute inset-0 flex items-end bg-gradient-to-t from-black/55 via-black/10 to-transparent p-6 sm:p-8">
-              {imageOverlay}
-            </div>
+          {caption && (
+            <div className="relative mt-6 hidden max-w-sm text-center lg:block">{caption}</div>
           )}
         </div>
 
-        {/* Right: form panel */}
-        <div className="flex items-center justify-center bg-[#FDFBF7] px-6 py-10 sm:px-12 lg:px-16">
+        {/* Form panel */}
+        <div className="flex items-start justify-center bg-[#FDFBF7] px-6 pb-12 pt-8 sm:px-12 sm:py-12 lg:items-center lg:px-14">
           <div className="w-full max-w-sm">{children}</div>
         </div>
       </div>

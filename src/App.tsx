@@ -19,6 +19,8 @@ import AdminSettings from "./pages/adminsettings.tsx";
 import AdminLayout from "./components/adminlayout.tsx";
 import ScrollToTop from "./components/scrolltotop.tsx";
 import Privacy from "./pages/privacy.tsx";
+import NotFound from "./pages/notfound.tsx";
+import FeedbackProvider from "./components/feedbackprovider.tsx";
 
 
 function RootLayout() {
@@ -49,8 +51,10 @@ function RootLayout() {
 
   return (
     <LenisContext.Provider value={lenis}>
-      <ScrollToTop />
-      <Outlet />
+      <FeedbackProvider>
+        <ScrollToTop />
+        <Outlet />
+      </FeedbackProvider>
     </LenisContext.Provider>
   );
 }
@@ -66,7 +70,7 @@ const ledgerockRouter = createBrowserRouter([
             { path: "/properties/:lotId", element: <PropertyDetail /> },
             { path: "/tablerockliving", element: <TableRockLiving /> },
             { path: "/privacy", element: <Privacy /> },
-            { path: "/admin", element: <AdminLogin /> },
+            { path: "/lr-manage", element: <AdminLogin /> },
             {
                 element: <AdminLayout />,
                 children: [
@@ -79,6 +83,7 @@ const ledgerockRouter = createBrowserRouter([
                     { path: "/admin/settings", element: <AdminSettings /> },
                 ],
             },
+            { path: "*", element: <NotFound /> },
         ],
     },
 ]);

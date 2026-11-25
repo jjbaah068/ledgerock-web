@@ -1,5 +1,5 @@
 import { useRef } from "react";
-import { motion, useScroll, useTransform, useSpring, useReducedMotion } from "motion/react";
+import { motion, useScroll, useTransform, useSpring, useReducedMotion, type MotionValue } from "motion/react";
 import { Link } from "react-router-dom";
 import { ArrowRight, ArrowDown } from "lucide-react";
 import kayakImage1 from '../assets/waterliving.webp'
@@ -31,6 +31,20 @@ const PANELS = [
     image: communityImage,
   },
 ];
+
+// One progress dot; its own component so the motion hooks aren't called inside a loop.
+function ProgressDot({ index, progress }: { index: number; progress: MotionValue<number> }) {
+  const start = Math.max(0, index / PANELS.length - 0.05);
+  const end = Math.min(1, index / PANELS.length + 0.05);
+  const opacity = useTransform(progress, [start, end], [0.2, 1]);
+  const scale = useTransform(progress, [start, end], [0.8, 1.2]);
+  return (
+    <motion.span
+      style={{ opacity, scale }}
+      className="h-1.5 w-1.5 rounded-full bg-white shadow-sm"
+    />
+  );
+}
 
 export default function LivingPreview() {
   const wrapperRef = useRef<HTMLDivElement>(null);
@@ -109,19 +123,9 @@ export default function LivingPreview() {
 
         {/* Smoothed Progress dots */}
         <div className="pointer-events-none absolute inset-x-0 top-28 z-30 flex items-center justify-center gap-2.5 sm:top-32">
-          {PANELS.map((panel, i) => {
-            const start = Math.max(0, i / PANELS.length - 0.05);
-            const end = Math.min(1, i / PANELS.length + 0.05);
-            const dotOpacity = useTransform(smoothProgress, [start, end], [0.2, 1]);
-            const dotScale = useTransform(smoothProgress, [start, end], [0.8, 1.2]);
-            return (
-              <motion.span
-                key={panel.label}
-                style={{ opacity: dotOpacity, scale: dotScale }}
-                className="h-1.5 w-1.5 rounded-full bg-white shadow-sm"
-              />
-            );
-          })}
+          {PANELS.map((panel, i) => (
+            <ProgressDot key={panel.label} index={i} progress={smoothProgress} />
+          ))}
         </div>
 
         {/* Horizontal-panning track */}

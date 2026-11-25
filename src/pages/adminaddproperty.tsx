@@ -24,15 +24,19 @@ import {
 } from "lucide-react";
 import {
   addAdminProperty,
+  MAX_PROPERTY_PHOTOS as MAX_PHOTOS,
+  photoProblem,
   PROPERTY_FEATURES,
   PROPERTY_TYPES,
   type AdminPropertyStatus,
   type PropertyFeature,
   type PropertyType,
+  formatUsd,
 } from "@/data/admindashboard";
+import { errorFields, errorMessage } from "@/lib/api";
+import { useToast } from "@/lib/feedback";
 
 const DESCRIPTION_LIMIT = 2000;
-const MAX_PHOTOS = 12;
 
 /** Status options shown in the form. "Save Draft" always saves as Draft. */
 const STATUS_OPTIONS: { label: string; value: Exclude<AdminPropertyStatus, "Draft"> }[] = [
@@ -44,6 +48,7 @@ interface Photo {
   id: string;
   url: string;
   name: string;
+  file: File;
 }
 
 interface FormState {
@@ -81,21 +86,22 @@ const labelClass = "mb-1.5 block font-body text-xs font-semibold text-neutral-70
 
 export default function AdminAddProperty() {
   const navigate = useNavigate();
+  const toast = useToast();
   const [form, setForm] = useState<FormState>(EMPTY_FORM);
   const [photos, setPhotos] = useState<Photo[]>([]);
   const [errors, setErrors] = useState<Errors>({});
   const [formMessage, setFormMessage] = useState<string | null>(null);
+  const [photoError, setPhotoError] = useState<string | null>(null);
+  const [saving, setSaving] = useState(false);
   const fileInput = useRef<HTMLInputElement>(null);
-  const savedRef = useRef(false);
 
-  // Free photo previews if the admin leaves without saving.
   const photosRef = useRef(photos);
   useEffect(() => {
     photosRef.current = photos;
   }, [photos]);
   useEffect(
     () => () => {
-      if (!savedRef.current) photosRef.current.forEach((p) => URL.revokeObjectURL(p.url));
+      photosRef.current.forEach((p) => URL.revokeObjectURL(p.url));
     },
     [],
   );
@@ -103,6 +109,7 @@ export default function AdminAddProperty() {
   function update<K extends keyof FormState>(key: K, value: FormState[K]) {
     setForm((f) => ({ ...f, [key]: value }));
     if (errors[key]) setErrors((e) => ({ ...e, [key]: undefined }));
+    setFormMessage(null);
   }
 
   function toggleFeature(feature: PropertyFeature) {
@@ -115,16 +122,19 @@ export default function AdminAddProperty() {
   }
 
   function addPhotos(event: ChangeEvent<HTMLInputElement>) {
-    const files = Array.from(event.target.files ?? []).filter((f) =>
-      f.type.startsWith("image/"),
-    );
+    const chosen = Array.from(event.target.files ?? []);
+    const problems = chosen.map(photoProblem).filter((p): p is string => p !== null);
+    const files = chosen.filter((file) => !photoProblem(file));
     const room = MAX_PHOTOS - photos.length;
+    if (files.length > room) problems.push(`Only ${MAX_PHOTOS} photos can be added.`);
     const added = files.slice(0, room).map((file) => ({
       id: crypto.randomUUID(),
       url: URL.createObjectURL(file),
       name: file.name,
+      file,
     }));
     setPhotos((list) => [...list, ...added]);
+    setPhotoError(problems.length > 0 ? problems.join(" ") : null);
     event.target.value = "";
   }
 
@@ -154,7 +164,8 @@ export default function AdminAddProperty() {
     return next;
   }
 
-  function save(asDraft: boolean) {
+  async function save(asDraft: boolean) {
+    if (saving) return;
     const found = validate(asDraft);
     setErrors(found);
     if (Object.keys(found).length > 0) {
@@ -170,22 +181,46 @@ export default function AdminAddProperty() {
     }
 
     const toNumber = (v: string) => (v.trim() === "" ? undefined : Number(v));
-    addAdminProperty({
-      title: form.title.trim(),
-      address: form.address.trim(),
-      price: Number(form.price) || 0,
-      status: asDraft ? "Draft" : form.status,
-      image: photos[0]?.url ?? "",
-      images: photos.map((p) => p.url),
-      propertyType: form.propertyType || undefined,
-      description: form.description.trim(),
-      bedrooms: toNumber(form.bedrooms),
-      bathrooms: toNumber(form.bathrooms),
-      squareFeet: toNumber(form.squareFeet),
-      features: form.features,
-    });
-    savedRef.current = true;
-    navigate("/admin/properties");
+    setSaving(true);
+    setFormMessage(null);
+    try {
+      const created = await addAdminProperty(
+        {
+          title: form.title.trim(),
+          address: form.address.trim(),
+          price: Number(form.price) || 0,
+          status: asDraft ? "Draft" : form.status,
+          propertyType: form.propertyType || undefined,
+          description: form.description.trim(),
+          bedrooms: toNumber(form.bedrooms),
+          bathrooms: toNumber(form.bathrooms),
+          squareFeet: toNumber(form.squareFeet),
+          features: form.features,
+        },
+        photos.map((p) => p.file),
+      );
+      const photoCount = created.images.length;
+      toast.success({
+        source: asDraft ? "Add Property · Draft" : "Add Property · Publish",
+        title: asDraft ? "Draft saved" : created.status === "Sold" ? "Sold listing added" : "Listing published",
+        description: asDraft
+          ? `"${created.title}" was saved as a draft. It isn't visible on the public site yet.`
+          : `"${created.title}" is now on the public site.`,
+        details: [`${photoCount} photo${photoCount === 1 ? "" : "s"} uploaded`, `Price: ${formatUsd(created.price)}`],
+      });
+      navigate("/admin/properties");
+    } catch (error) {
+      toast.fromError(error, {
+        source: asDraft ? "Add Property · Draft" : "Add Property · Publish",
+        title: asDraft ? "The draft wasn't saved" : "The listing wasn't published",
+      });
+      const fields = errorFields(error);
+      setErrors(fields as Errors);
+      setFormMessage(fields.photos ?? errorMessage(error));
+      const first = Object.keys(fields)[0];
+      if (first) document.getElementById(`field-${first}`)?.focus();
+      setSaving(false);
+    }
   }
 
   return (
@@ -204,22 +239,24 @@ export default function AdminAddProperty() {
           <button
             type="button"
             onClick={() => save(true)}
-            className="rounded-full border border-neutral-700/20 bg-white px-5 py-2.5 font-body text-sm font-semibold text-neutral-700 shadow-sm transition hover:border-primary hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
+            disabled={saving}
+            className="rounded-full border border-neutral-700/20 bg-white px-5 py-2.5 font-body text-sm font-semibold text-neutral-700 shadow-sm transition hover:border-primary hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60"
           >
             Save Draft
           </button>
           <button
             type="button"
             onClick={() => save(false)}
-            className="inline-flex items-center gap-2 rounded-full bg-[#64836E] px-5 py-2.5 font-body text-sm font-semibold text-white shadow-sm transition hover:bg-[#55705E] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#64836E] focus-visible:ring-offset-2"
+            disabled={saving}
+            className="inline-flex items-center gap-2 rounded-full bg-[#64836E] px-5 py-2.5 font-body text-sm font-semibold text-white shadow-sm transition hover:bg-[#55705E] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#64836E] focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60"
           >
             <Send className="h-4 w-4" aria-hidden="true" />
-            Publish
+            {saving ? "Saving..." : "Publish"}
           </button>
         </div>
       </div>
 
-      {formMessage && Object.keys(errors).some((k) => errors[k as keyof FormState]) && (
+      {formMessage && (
         <p
           role="alert"
           className="mt-6 flex items-start gap-2 rounded-xl bg-red-50 px-4 py-3 font-body text-sm text-red-700"
@@ -404,13 +441,18 @@ export default function AdminAddProperty() {
             <input
               ref={fileInput}
               type="file"
-              accept="image/*"
+              accept="image/*,.heic,.heif,.avif"
               multiple
               onChange={addPhotos}
               className="sr-only"
               tabIndex={-1}
               aria-hidden="true"
             />
+            {photoError && (
+              <p role="alert" className="mt-3 font-body text-xs text-red-600">
+                {photoError}
+              </p>
+            )}
           </Section>
         </div>
 
